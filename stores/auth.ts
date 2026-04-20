@@ -1,20 +1,43 @@
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 /**
- * Minimal session holder for Bearer auth on the axios client (`lib/api/token.ts`).
+ * Session + Bearer auth (`lib/api/token.ts`).
  *
- * Refresh-token persistence is intentionally out of scope for F2.4: choose later
- * between httpOnly cookies vs localStorage (security vs SPA ergonomics) and
- * document in PR when implemented.
+ * Persisted to localStorage (XSS exposure vs SPA convenience — see F2.4 notes).
+ * Both tokens restored on reload; refresh-on-401 uses refresh_token in client.
  */
 type AuthState = {
   accessToken: string | null;
-  setSession: (accessToken: string) => void;
+  refreshToken: string | null;
+  setSession: (accessToken: string, refreshToken: string) => void;
   clearSession: () => void;
 };
 
-export const useAuthStore = create<AuthState>((set) => ({
-  accessToken: null,
-  setSession: (accessToken) => set({ accessToken }),
-  clearSession: () => set({ accessToken: null }),
-}));
+const noopStorage: Pick<Storage, "getItem" | "setItem" | "removeItem"> = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      accessToken: null,
+      refreshToken: null,
+      setSession: (accessToken, refreshToken) =>
+        set({ accessToken, refreshToken }),
+      clearSession: () => set({ accessToken: null, refreshToken: null }),
+    }),
+    {
+      name: "inventory-auth",
+      partialize: (s) => ({
+        accessToken: s.accessToken,
+        refreshToken: s.refreshToken,
+      }),
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined" ? window.localStorage : noopStorage,
+      ),
+    },
+  ),
+);

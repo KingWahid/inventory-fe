@@ -23,7 +23,7 @@ export default function RegisterPage() {
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: (data) => {
-      setSession(data.access_token);
+      setSession(data.access_token, data.refresh_token);
       router.replace("/dashboard");
     },
   });

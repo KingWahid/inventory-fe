@@ -43,3 +43,35 @@ export async function register(body: RegisterBody): Promise<RegisterData> {
   );
   return res.data.data;
 }
+
+export type RefreshBody = {
+  refresh_token: string;
+};
+
+export type MeData = {
+  user_id: string;
+  tenant_id: string;
+  email: string;
+  full_name?: string;
+};
+
+export async function refreshTokens(
+  body: RefreshBody,
+): Promise<LoginData> {
+  const res = await apiClient.post<ApiEnvelopeSuccess<LoginData>>(
+    "/api/v1/auth/refresh",
+    body,
+  );
+  return res.data.data;
+}
+
+export async function logout(): Promise<void> {
+  await apiClient.post("/api/v1/auth/logout");
+}
+
+export async function getMe(): Promise<MeData> {
+  const res = await apiClient.get<ApiEnvelopeSuccess<MeData>>(
+    "/api/v1/auth/me",
+  );
+  return res.data.data;
+}
