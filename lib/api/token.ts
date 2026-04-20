@@ -1,7 +1,7 @@
-/**
- * Single place for Bearer token used by `lib/api/client`.
- * Wire to Zustand auth store in F2.4.
- */
+import { useAuthStore } from "@/stores/auth";
+
+/** Sync getter for axios interceptors — do not use React hooks here. */
+
 export function getAccessToken(): string | null {
-  return null;
+  return useAuthStore.getState().accessToken;
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { AuthTokenBridge } from "@/components/dev/AuthTokenBridge";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 
@@ -17,6 +18,9 @@ export function Providers({ children }: { children: ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      {children}
+      <AuthTokenBridge />
+    </QueryClientProvider>
   );
 }
