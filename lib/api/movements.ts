@@ -80,3 +80,94 @@ export async function cancelMovement(movementId: string): Promise<Movement> {
   );
   return res.data.data;
 }
+
+/** Draft create payloads — JSON keys snake_case per OpenAPI / backend bind. */
+export type MovementLineCreateBody = {
+  product_id: string;
+  quantity: number;
+  notes?: string;
+};
+
+export type InboundCreateBody = {
+  reference_number: string;
+  destination_warehouse_id: string;
+  lines: MovementLineCreateBody[];
+  notes?: string;
+};
+
+export type OutboundCreateBody = {
+  reference_number: string;
+  source_warehouse_id: string;
+  lines: MovementLineCreateBody[];
+  notes?: string;
+};
+
+export type TransferCreateBody = {
+  reference_number: string;
+  source_warehouse_id: string;
+  destination_warehouse_id: string;
+  lines: MovementLineCreateBody[];
+  notes?: string;
+};
+
+/** Exactly one warehouse field must be set (validated client + server). */
+export type AdjustmentCreateBody = {
+  reference_number: string;
+  lines: MovementLineCreateBody[];
+  notes?: string;
+} & (
+  | { source_warehouse_id: string; destination_warehouse_id?: undefined }
+  | { destination_warehouse_id: string; source_warehouse_id?: undefined }
+);
+
+function idempotencyHeaders(key: string): { "Idempotency-Key": string } {
+  return { "Idempotency-Key": key };
+}
+
+export async function createInboundDraft(
+  body: InboundCreateBody,
+  idempotencyKey: string,
+): Promise<Movement> {
+  const res = await apiClient.post<ApiEnvelopeSuccess<Movement>>(
+    "/api/v1/inventory/movements/inbound",
+    body,
+    { headers: idempotencyHeaders(idempotencyKey) },
+  );
+  return res.data.data;
+}
+
+export async function createOutboundDraft(
+  body: OutboundCreateBody,
+  idempotencyKey: string,
+): Promise<Movement> {
+  const res = await apiClient.post<ApiEnvelopeSuccess<Movement>>(
+    "/api/v1/inventory/movements/outbound",
+    body,
+    { headers: idempotencyHeaders(idempotencyKey) },
+  );
+  return res.data.data;
+}
+
+export async function createTransferDraft(
+  body: TransferCreateBody,
+  idempotencyKey: string,
+): Promise<Movement> {
+  const res = await apiClient.post<ApiEnvelopeSuccess<Movement>>(
+    "/api/v1/inventory/movements/transfer",
+    body,
+    { headers: idempotencyHeaders(idempotencyKey) },
+  );
+  return res.data.data;
+}
+
+export async function createAdjustmentDraft(
+  body: AdjustmentCreateBody,
+  idempotencyKey: string,
+): Promise<Movement> {
+  const res = await apiClient.post<ApiEnvelopeSuccess<Movement>>(
+    "/api/v1/inventory/movements/adjustment",
+    body,
+    { headers: idempotencyHeaders(idempotencyKey) },
+  );
+  return res.data.data;
+}
