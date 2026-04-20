@@ -1,6 +1,5 @@
 "use client";
 
-import { AuthTokenBridge } from "@/components/dev/AuthTokenBridge";
 import { SessionCookieSync } from "@/components/SessionCookieSync";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
@@ -22,7 +21,6 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <SessionCookieSync />
       {children}
-      <AuthTokenBridge />
     </QueryClientProvider>
   );
 }
