@@ -13,38 +13,50 @@ import {
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { queryKeys } from "@/lib/query-keys";
 import { useQuery } from "@tanstack/react-query";
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 const STALE_MS = 30_000;
 
-const PERIOD_OPTIONS: { value: DashboardChartPeriod; label: string }[] = [
-  { value: "daily", label: "Harian (30 hari)" },
-  { value: "weekly", label: "Mingguan (12 minggu)" },
-  { value: "monthly", label: "Bulanan (12 bulan)" },
-];
-
-function formatNum(n: number): string {
-  return n.toLocaleString("id-ID");
+function formatNum(n: number, locale: string): string {
+  const tag = locale === "en" ? "en-US" : "id-ID";
+  return n.toLocaleString(tag);
 }
 
-function shortBucketLabel(isoDate: string, period: DashboardChartPeriod): string {
+function shortBucketLabel(
+  isoDate: string,
+  period: DashboardChartPeriod,
+  locale: string,
+): string {
+  const tag = locale === "en" ? "en-US" : "id-ID";
   try {
     const d = new Date(isoDate + (isoDate.includes("T") ? "" : "T00:00:00Z"));
     if (Number.isNaN(d.getTime())) return isoDate.slice(0, 10);
     if (period === "monthly") {
-      return d.toLocaleDateString("id-ID", { month: "short", year: "2-digit" });
+      return d.toLocaleDateString(tag, { month: "short", year: "2-digit" });
     }
     if (period === "weekly") {
-      return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+      return d.toLocaleDateString(tag, { day: "numeric", month: "short" });
     }
-    return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+    return d.toLocaleDateString(tag, { day: "numeric", month: "short" });
   } catch {
     return isoDate.slice(0, 10);
   }
 }
 
 export default function DashboardPage() {
+  const t = useTranslations("dashboard");
+  const locale = useLocale();
   const [period, setPeriod] = useState<DashboardChartPeriod>("daily");
+
+  const PERIOD_OPTIONS: { value: DashboardChartPeriod; label: string }[] = useMemo(
+    () => [
+      { value: "daily", label: t("periodDaily") },
+      { value: "weekly", label: t("periodWeekly") },
+      { value: "monthly", label: t("periodMonthly") },
+    ],
+    [t],
+  );
 
   const summaryQuery = useQuery({
     queryKey: queryKeys.inventory.dashboard.summary(),
@@ -74,45 +86,51 @@ export default function DashboardPage() {
     <DashboardPageTemplate>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Ringkasan</h1>
-          <p className="mt-1 text-sm text-default-600">
-            Data cache server ~30 detik.
-          </p>
+          <h1 className="text-2xl font-semibold">{t("title")}</h1>
+          <p className="mt-1 text-sm text-default-600">{t("cacheHint")}</p>
         </div>
         <StockLiveIndicator />
       </div>
 
       {chartError ? (
-        <ApiErrorAlert title="Gagal memuat dashboard">
+        <ApiErrorAlert title={t("loadFail")}>
           {userFacingApiMessage(chartError)}
         </ApiErrorAlert>
       ) : null}
 
       <section>
-        <h2 className="sr-only">Kartu ringkasan</h2>
+        <h2 className="sr-only">{t("summaryCardsTitle")}</h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryStatCard
-            title="Produk"
-            subtitle="Non-deleted di tenant"
-            value={summary ? formatNum(summary.total_products) : "—"}
+            title={t("products")}
+            subtitle={t("productsSub")}
+            value={
+              summary ? formatNum(summary.total_products, locale) : "—"
+            }
             loading={summaryQuery.isLoading}
           />
           <SummaryStatCard
-            title="Movement"
-            subtitle="Terkonfirmasi hari ini (UTC)"
-            value={summary ? formatNum(summary.movements_today) : "—"}
+            title={t("movement")}
+            subtitle={t("movementSub")}
+            value={
+              summary ? formatNum(summary.movements_today, locale) : "—"
+            }
             loading={summaryQuery.isLoading}
           />
           <SummaryStatCard
-            title="Low stock"
-            subtitle="Di bawah reorder level"
-            value={summary ? formatNum(summary.low_stock_count) : "—"}
+            title={t("lowStock")}
+            subtitle={t("lowStockSub")}
+            value={
+              summary ? formatNum(summary.low_stock_count, locale) : "—"
+            }
             loading={summaryQuery.isLoading}
           />
           <SummaryStatCard
-            title="Gudang aktif"
-            subtitle="Mengganti slot Alerts sampai notifikasi"
-            value={summary ? formatNum(summary.total_warehouses) : "—"}
+            title={t("warehouses")}
+            subtitle={t("warehousesSub")}
+            value={
+              summary ? formatNum(summary.total_warehouses, locale) : "—"
+            }
             loading={summaryQuery.isLoading}
           />
         </div>
@@ -120,11 +138,11 @@ export default function DashboardPage() {
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-          <h2 className="text-lg font-semibold">Movement terkonfirmasi</h2>
+          <h2 className="text-lg font-semibold">{t("chartTitle")}</h2>
           <InventorySelect
-            label="Periode"
+            label={t("periodLabel")}
             className="w-full min-w-[12rem] sm:w-auto"
-            placeholder="Periode chart"
+            placeholder={t("periodPlaceholder")}
             items={PERIOD_OPTIONS.map((o) => ({
               id: o.value,
               label: o.label,
@@ -167,7 +185,7 @@ export default function DashboardPage() {
                         title={`${p.bucket_start}: ${p.movement_count}`}
                       />
                       <span className="mt-2 max-w-[4rem] truncate text-center text-[10px] text-default-500">
-                        {shortBucketLabel(p.bucket_start, chart.period)}
+                        {shortBucketLabel(p.bucket_start, chart.period, locale)}
                       </span>
                     </div>
                   );
@@ -176,7 +194,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <p className="py-8 text-center text-sm text-default-500">
-              Belum ada data chart untuk periode ini.
+              {t("chartEmpty")}
             </p>
           )}
         </div>

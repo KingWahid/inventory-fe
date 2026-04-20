@@ -2,7 +2,7 @@
 
 import { setSessionCookie } from "@/lib/auth/session-cookie";
 import { useAuthStore } from "@/stores/auth";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 
 /** If persisted session exists but middleware cookie missing, restore cookie + go dashboard. */

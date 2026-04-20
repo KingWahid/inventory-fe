@@ -1,17 +1,18 @@
 "use client";
 
 import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
+import { Link, useRouter } from "@/i18n/navigation";
 import { login, register } from "@/lib/api/auth";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { useAuthStore } from "@/stores/auth";
 import { Button, Input, Label, Spinner, TextField } from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
-import NextLink from "next/link";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { FormEvent, useState } from "react";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const t = useTranslations("auth.register");
   const setSession = useAuthStore((s) => s.setSession);
 
   const [tenantName, setTenantName] = useState("");
@@ -43,7 +44,7 @@ export default function RegisterPage() {
     e.preventDefault();
     setLocalError(null);
     if (password !== passwordConfirm) {
-      setLocalError("Konfirmasi password tidak cocok.");
+      setLocalError(t("passwordMismatch"));
       return;
     }
     registerMutation.mutate({
@@ -66,18 +67,18 @@ export default function RegisterPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Daftar tenant</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
       </div>
 
       <form className="flex flex-col gap-6" onSubmit={onSubmit} noValidate>
         {errorMessage ? (
-          <ApiErrorAlert title="Terjadi kesalahan">{errorMessage}</ApiErrorAlert>
+          <ApiErrorAlert title={t("failTitle")}>{errorMessage}</ApiErrorAlert>
         ) : null}
 
         <TextField fullWidth name="tenant_name" autoComplete="organization">
-          <Label>Nama bisnis</Label>
+          <Label>{t("tenantName")}</Label>
           <Input
-            placeholder="Acme Corp"
+            placeholder={t("tenantPlaceholder")}
             value={tenantName}
             onChange={(ev) => setTenantName(ev.target.value)}
             disabled={busy}
@@ -85,9 +86,9 @@ export default function RegisterPage() {
         </TextField>
 
         <TextField fullWidth name="admin_name" autoComplete="name">
-          <Label>Nama admin</Label>
+          <Label>{t("adminName")}</Label>
           <Input
-            placeholder="Nama lengkap"
+            placeholder={t("adminPlaceholder")}
             value={adminName}
             onChange={(ev) => setAdminName(ev.target.value)}
             disabled={busy}
@@ -95,9 +96,9 @@ export default function RegisterPage() {
         </TextField>
 
         <TextField fullWidth name="admin_email" type="email" autoComplete="email">
-          <Label>Email</Label>
+          <Label>{t("email")}</Label>
           <Input
-            placeholder="nama@bisnis.test"
+            placeholder={t("emailPlaceholder")}
             value={adminEmail}
             onChange={(ev) => setAdminEmail(ev.target.value)}
             disabled={busy}
@@ -105,9 +106,9 @@ export default function RegisterPage() {
         </TextField>
 
         <TextField fullWidth name="password" type="password" autoComplete="new-password">
-          <Label>Password</Label>
+          <Label>{t("password")}</Label>
           <Input
-            placeholder="Minimal 8 karakter"
+            placeholder={t("passwordHint")}
             value={password}
             onChange={(ev) => setPassword(ev.target.value)}
             disabled={busy}
@@ -115,9 +116,9 @@ export default function RegisterPage() {
         </TextField>
 
         <TextField fullWidth name="password_confirm" type="password" autoComplete="new-password">
-          <Label>Konfirmasi password</Label>
+          <Label>{t("passwordConfirm")}</Label>
           <Input
-            placeholder="Ulangi password"
+            placeholder={t("passwordRepeat")}
             value={passwordConfirm}
             onChange={(ev) => setPasswordConfirm(ev.target.value)}
             disabled={busy}
@@ -129,18 +130,18 @@ export default function RegisterPage() {
             {busy ? (
               <>
                 <Spinner color="current" size="sm" />
-                Memproses…
+                {t("processing")}
               </>
             ) : (
-              "Daftar"
+              t("submit")
             )}
           </Button>
-          <NextLink
+          <Link
             href="/login"
             className="text-sm text-primary underline-offset-4 hover:underline"
           >
-            Masuk
-          </NextLink>
+            {t("loginLink")}
+          </Link>
         </div>
       </form>
     </div>

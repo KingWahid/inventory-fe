@@ -10,14 +10,19 @@ import { listProducts } from "@/lib/api/products";
 import { listWarehouses } from "@/lib/api/warehouses";
 import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
 import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
+import { useRouter } from "@/i18n/navigation";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { useParams } from "next/navigation";
 import { useMemo } from "react";
 
 export default function MovementDetailPage() {
+  const t = useTranslations("inventory.movementsDetail");
+  const tc = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const params = useParams();
   const idParam = params.id;
@@ -98,7 +103,7 @@ export default function MovementDetailPage() {
   if (!id) {
     return (
       <DashboardPageTemplate gap="gap-4">
-        <p className="text-default-600">Movement tidak valid.</p>
+        <p className="text-default-600">{t("invalid")}</p>
       </DashboardPageTemplate>
     );
   }
@@ -130,8 +135,9 @@ export default function MovementDetailPage() {
   }
 
   function formatWhen(iso: string): string {
+    const tag = locale === "en" ? "en-US" : "id-ID";
     try {
-      return new Date(iso).toLocaleString("id-ID", {
+      return new Date(iso).toLocaleString(tag, {
         dateStyle: "medium",
         timeStyle: "short",
       });
@@ -162,14 +168,14 @@ export default function MovementDetailPage() {
           className="min-h-11 sm:min-h-0"
           onPress={() => router.push("/inventory/movements")}
         >
-          ← Kembali
+          {t("back")}
         </Button>
       </div>
 
       {movementQuery.isLoading ? (
-        <p className="text-default-600">Memuat movement…</p>
+        <p className="text-default-600">{t("loading")}</p>
       ) : movementQuery.isError ? (
-        <ApiErrorAlert title="Gagal memuat">
+        <ApiErrorAlert title={t("loadFail")}>
           {userFacingApiMessage(movementQuery.error)}
         </ApiErrorAlert>
       ) : movement ? (
@@ -200,7 +206,7 @@ export default function MovementDetailPage() {
                     onPress={() => confirmMut.mutate()}
                     isDisabled={confirmMut.isPending || cancelMut.isPending}
                   >
-                    {confirmMut.isPending ? "…" : "Konfirmasi"}
+                    {confirmMut.isPending ? "…" : t("confirm")}
                   </Button>
                   <Button
                     variant="secondary"
@@ -208,7 +214,7 @@ export default function MovementDetailPage() {
                     onPress={() => cancelMut.mutate()}
                     isDisabled={confirmMut.isPending || cancelMut.isPending}
                   >
-                    {cancelMut.isPending ? "…" : "Batal"}
+                    {cancelMut.isPending ? "…" : t("cancelMovement")}
                   </Button>
                 </>
               ) : null}
@@ -216,31 +222,31 @@ export default function MovementDetailPage() {
           </div>
 
           <p className="text-sm text-default-600">
-            Diperbarui: {formatWhen(movement.updated_at)}
+            {t("updated")} {formatWhen(movement.updated_at)}
           </p>
 
           {mutationError ? (
-            <ApiErrorAlert title="Operasi gagal">
+            <ApiErrorAlert title={t("operationFail")}>
               {userFacingApiMessage(mutationError)}
             </ApiErrorAlert>
           ) : null}
 
           <div>
-            <h2 className="mb-2 text-lg font-semibold">Lines</h2>
+            <h2 className="mb-2 text-lg font-semibold">{t("lines")}</h2>
             <div className="overflow-x-auto rounded-lg border border-default-200">
               <table className="w-full min-w-[560px] border-collapse text-sm">
                 <thead className="bg-default-100/60 text-left">
                   <tr>
-                    <th className="px-3 py-2 font-semibold">Produk</th>
-                    <th className="px-3 py-2 font-semibold">Qty</th>
-                    <th className="px-3 py-2 font-semibold">Catatan</th>
+                    <th className="px-3 py-2 font-semibold">{tc("product")}</th>
+                    <th className="px-3 py-2 font-semibold">{tc("qty")}</th>
+                    <th className="px-3 py-2 font-semibold">{tc("notes")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lines.length === 0 ? (
                     <tr>
                       <td className="px-3 py-4 text-default-500" colSpan={3}>
-                        Tidak ada baris.
+                        {t("emptyLines")}
                       </td>
                     </tr>
                   ) : (

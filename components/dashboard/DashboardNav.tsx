@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 
 function linkClass(active: boolean): string {
   return [
@@ -18,6 +18,7 @@ type Props = {
 
 export function DashboardNav({ onNavigate }: Props) {
   const pathname = usePathname();
+  const t = useTranslations("nav");
 
   const dashActive = pathname === "/dashboard";
   const catActive = pathname === "/inventory/categories";
@@ -29,38 +30,38 @@ export function DashboardNav({ onNavigate }: Props) {
   const auditActive = pathname === "/inventory/audit";
 
   return (
-    <nav className="flex flex-col gap-1 p-3" aria-label="Navigasi utama">
+    <nav className="flex flex-col gap-1 p-3" aria-label={t("main")}>
       <Link
         href="/dashboard"
         className={linkClass(dashActive)}
         onClick={() => onNavigate?.()}
       >
-        Dash
+        {t("dashboard")}
       </Link>
 
       <div className="px-3 pt-2 text-xs font-semibold uppercase tracking-wide text-default-500">
-        Master
+        {t("master")}
       </div>
       <Link
         href="/inventory/categories"
         className={`${linkClass(catActive)} pl-6`}
         onClick={() => onNavigate?.()}
       >
-        Cat
+        {t("categories")}
       </Link>
       <Link
         href="/inventory/products"
         className={`${linkClass(prodActive)} pl-6`}
         onClick={() => onNavigate?.()}
       >
-        Prod
+        {t("products")}
       </Link>
       <Link
         href="/inventory/warehouses"
         className={`${linkClass(whActive)} pl-6`}
         onClick={() => onNavigate?.()}
       >
-        Wh
+        {t("warehouses")}
       </Link>
 
       <Link
@@ -68,14 +69,14 @@ export function DashboardNav({ onNavigate }: Props) {
         className={linkClass(movActive)}
         onClick={() => onNavigate?.()}
       >
-        Move
+        {t("movements")}
       </Link>
       <Link
         href="/inventory/audit"
         className={linkClass(auditActive)}
         onClick={() => onNavigate?.()}
       >
-        Audit
+        {t("audit")}
       </Link>
     </nav>
   );

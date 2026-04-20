@@ -1,17 +1,18 @@
 "use client";
 
 import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
+import { Link, useRouter } from "@/i18n/navigation";
 import { login } from "@/lib/api/auth";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { useAuthStore } from "@/stores/auth";
 import { Button, Input, Label, Spinner, TextField } from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
-import NextLink from "next/link";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { FormEvent, useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const t = useTranslations("auth.login");
   const setSession = useAuthStore((s) => s.setSession);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,18 +36,18 @@ export default function LoginPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Inventory</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
       </div>
 
       <form className="flex flex-col gap-6" onSubmit={onSubmit} noValidate>
         {errorMessage ? (
-          <ApiErrorAlert title="Gagal masuk">{errorMessage}</ApiErrorAlert>
+          <ApiErrorAlert title={t("failTitle")}>{errorMessage}</ApiErrorAlert>
         ) : null}
 
         <TextField fullWidth name="email" type="email" autoComplete="email">
-          <Label>Email</Label>
+          <Label>{t("email")}</Label>
           <Input
-            placeholder="nama@bisnis.test"
+            placeholder={t("emailPlaceholder")}
             value={email}
             onChange={(ev) => setEmail(ev.target.value)}
             disabled={mutation.isPending}
@@ -54,9 +55,9 @@ export default function LoginPage() {
         </TextField>
 
         <TextField fullWidth name="password" type="password" autoComplete="current-password">
-          <Label>Password</Label>
+          <Label>{t("password")}</Label>
           <Input
-            placeholder="••••••••"
+            placeholder={t("passwordPlaceholder")}
             value={password}
             onChange={(ev) => setPassword(ev.target.value)}
             disabled={mutation.isPending}
@@ -68,18 +69,18 @@ export default function LoginPage() {
             {mutation.isPending ? (
               <>
                 <Spinner color="current" size="sm" />
-                Memproses…
+                {t("processing")}
               </>
             ) : (
-              "Masuk"
+              t("submit")
             )}
           </Button>
-          <NextLink
+          <Link
             href="/register"
             className="text-sm text-primary underline-offset-4 hover:underline"
           >
-            Daftar tenant baru
-          </NextLink>
+            {t("registerLink")}
+          </Link>
         </div>
       </form>
     </div>

@@ -1,6 +1,8 @@
 "use client";
 
+import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { getMe, logout } from "@/lib/api/auth";
 import { queryKeys } from "@/lib/query-keys";
 import { useAuthStore } from "@/stores/auth";
@@ -17,7 +19,7 @@ import {
   useOverlayState,
 } from "@heroui/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   type ReactNode,
   type SVGProps,
@@ -45,6 +47,8 @@ function MenuIcon(props: SVGProps<SVGSVGElement>) {
 }
 
 export function DashboardShell({ children }: { children: ReactNode }) {
+  const t = useTranslations("shell");
+  const tc = useTranslations("common");
   const router = useRouter();
   const pathname = usePathname();
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -89,27 +93,27 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     "flex min-h-full flex-1 items-center justify-center px-4 py-6 text-default-600 sm:px-6 lg:px-8";
 
   if (!hydrated) {
-    return <div className={loadingShellClass}>Memuat sesi…</div>;
+    return <div className={loadingShellClass}>{t("loadingSession")}</div>;
   }
 
   if (!accessToken) {
     return (
-      <div className={loadingShellClass}>Mengalihkan ke login…</div>
+      <div className={loadingShellClass}>{t("redirectLogin")}</div>
     );
   }
 
   const me = meQuery.data;
   const displayName = me?.full_name?.trim() || me?.email || "—";
   const tenantLabel = me?.tenant_id
-    ? `Tenant ${me.tenant_id.slice(0, 8)}…`
-    : "Tenant";
+    ? `${t("tenant")} ${me.tenant_id.slice(0, 8)}…`
+    : t("tenant");
 
   return (
     <div className="flex min-h-full min-w-0 flex-1 flex-col">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-default-200 px-4 py-3 dark:border-default-100">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-sm md:gap-3">
           <Button
-            aria-label="Buka navigasi"
+            aria-label={t("openNav")}
             variant="secondary"
             size="sm"
             className="min-h-11 min-w-11 shrink-0 px-0 md:hidden"
@@ -117,7 +121,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           >
             <MenuIcon />
           </Button>
-          <span className="font-semibold">Inventory</span>
+          <span className="font-semibold">{tc("brand")}</span>
           <span className="hidden truncate text-default-500 sm:inline">
             {tenantLabel}
           </span>
@@ -125,19 +129,20 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             {displayName}
           </span>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <LocaleSwitcher />
           <Dropdown>
             <DropdownTrigger className="inline-flex min-h-11 cursor-pointer items-center gap-1 rounded-md border border-default-200 bg-default-100 px-3 text-sm font-medium text-default-900 outline-none hover:bg-default-200 data-[focus-visible]:ring-2 data-[focus-visible]:ring-focus dark:border-default-100 dark:bg-default-50/10 dark:text-default-50 dark:hover:bg-default-50/15 sm:min-h-8">
-              User
+              {t("user")}
               <IconChevronDown className="size-4 opacity-70" />
             </DropdownTrigger>
             <DropdownPopover placement="bottom end">
-              <DropdownMenu aria-label="Menu pengguna">
+              <DropdownMenu aria-label={t("userMenu")}>
                 <DropdownItem key="email" isDisabled textValue={me?.email ?? ""}>
                   {me?.email ?? "—"}
                 </DropdownItem>
-                <DropdownItem key="profil" isDisabled textValue="Profil">
-                  Profil
+                <DropdownItem key="profil" isDisabled textValue={t("profile")}>
+                  {t("profile")}
                 </DropdownItem>
               </DropdownMenu>
             </DropdownPopover>
@@ -149,7 +154,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             onPress={() => logoutMut.mutate()}
             isDisabled={logoutMut.isPending}
           >
-            {logoutMut.isPending ? "Keluar…" : "Keluar"}
+            {logoutMut.isPending ? t("logoutPending") : t("logout")}
           </Button>
         </div>
       </header>
@@ -162,9 +167,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         >
           <Drawer.Dialog className="flex h-[100dvh] max-h-[100dvh] flex-col rounded-none outline-none">
             <div className="flex items-center justify-between border-b border-default-200 px-4 py-3 dark:border-default-100">
-              <span className="font-semibold">Menu</span>
+              <span className="font-semibold">{t("menu")}</span>
               <Button
-                aria-label="Tutup navigasi"
+                aria-label={t("closeNav")}
                 variant="secondary"
                 size="sm"
                 className="min-h-11 min-w-11 px-0"
@@ -187,7 +192,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <div className="flex min-w-0 flex-1 flex-col">
           {meQuery.isError ? (
             <div className="border-b border-danger-200 bg-danger-50 px-4 py-2 text-sm text-danger-700 dark:border-danger-900 dark:bg-danger-950/40 dark:text-danger-300">
-              Profil tidak dapat dimuat. Coba muat ulang halaman.
+              {t("profileLoadFail")}
             </div>
           ) : null}
           <div className="min-h-0 flex-1 overflow-auto">{children}</div>

@@ -4,11 +4,13 @@ import { buildStockSseUrl } from "@/lib/api/sse-stock-url";
 import { queryKeys } from "@/lib/query-keys";
 import { useAuthStore } from "@/stores/auth";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 type ConnStatus = "off" | "connecting" | "live" | "error";
 
 export function StockLiveIndicator() {
+  const t = useTranslations("dashboard.stockLive");
   const accessToken = useAuthStore((s) => s.accessToken);
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<ConnStatus>("off");
@@ -52,20 +54,20 @@ export function StockLiveIndicator() {
 
   const title =
     status === "live"
-      ? "Terhubung ke stream stok (SSE)"
+      ? t("titleLive")
       : status === "connecting"
-        ? "Menyambung ke stream stok…"
+        ? t("titleConnecting")
         : status === "error"
-          ? "Stream terputus — browser akan mencoba lagi"
-          : "Tidak ada sesi — login untuk stok live";
+          ? t("titleError")
+          : t("titleOff");
 
   const line2 =
     status === "error"
-      ? "Reconnect otomatis / periksa Redis & Kong"
+      ? t("hintError")
       : status === "off" && !accessToken
-        ? "Login untuk mengaktifkan"
+        ? t("hintLogin")
         : status === "connecting"
-          ? "Menunggu handshake…"
+          ? t("hintConnecting")
           : "";
 
   return (
@@ -79,17 +81,17 @@ export function StockLiveIndicator() {
           aria-hidden
         />
         <span>
-          Stok live:{" "}
+          {t("badge")}{" "}
           {status === "live" ? (
-            <span className="text-success-700 dark:text-success-400">ON</span>
+            <span className="text-success-700 dark:text-success-400">{t("on")}</span>
           ) : status === "connecting" ? (
             <span className="text-warning-700 dark:text-warning-300">
-              menyambung…
+              {t("connectingShort")}
             </span>
           ) : status === "error" ? (
-            <span className="text-warning-700 dark:text-warning-300">OFF</span>
+            <span className="text-warning-700 dark:text-warning-300">{t("off")}</span>
           ) : (
-            <span className="text-default-500">OFF</span>
+            <span className="text-default-500">{t("off")}</span>
           )}
         </span>
       </div>

@@ -1,5 +1,5 @@
 import { cn } from "@/lib/cn";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { ReactNode } from "react";
 
 const backLinkClass =

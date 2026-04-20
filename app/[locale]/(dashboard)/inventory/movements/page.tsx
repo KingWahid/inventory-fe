@@ -1,6 +1,9 @@
 "use client";
 
-import { listWarehouses } from "@/lib/api/warehouses";
+import { InventorySearchField } from "@/components/ui/molecules/InventorySearchField";
+import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
+import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import {
   listMovements,
   type Movement,
@@ -8,60 +11,15 @@ import {
   type MovementStatus,
   type MovementType,
 } from "@/lib/api/movements";
-import { InventorySearchField } from "@/components/ui/molecules/InventorySearchField";
-import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
-import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
+import { listWarehouses } from "@/lib/api/warehouses";
 import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 const DEFAULT_PER_PAGE = 20;
-
-const TYPE_OPTIONS: { value: MovementType | ""; label: string }[] = [
-  { value: "", label: "Semua jenis" },
-  { value: "inbound", label: "Inbound" },
-  { value: "outbound", label: "Outbound" },
-  { value: "transfer", label: "Transfer" },
-  { value: "adjustment", label: "Adjustment" },
-];
-
-const STATUS_OPTIONS = [
-  { value: "", label: "Semua status" },
-  { value: "draft", label: "Draft" },
-  { value: "confirmed", label: "Confirmed" },
-  { value: "cancelled", label: "Cancelled" },
-] as const;
-
-const SORT_FIELDS = [
-  { value: "created_at", label: "Dibuat" },
-  { value: "updated_at", label: "Diubah" },
-  { value: "reference_number", label: "Ref" },
-  { value: "status", label: "Status" },
-  { value: "type", label: "Tipe" },
-] as const;
-
-const TYPE_FILTER_ITEMS = TYPE_OPTIONS.map((o) => ({
-  id: o.value,
-  label: o.label,
-}));
-
-const STATUS_FILTER_ITEMS = STATUS_OPTIONS.map((o) => ({
-  id: o.value,
-  label: o.label,
-}));
-
-const SORT_FILTER_ITEMS = SORT_FIELDS.map((s) => ({
-  id: s.value,
-  label: s.label,
-}));
-
-const ORDER_FILTER_ITEMS = [
-  { id: "desc", label: "Turun" },
-  { id: "asc", label: "Naik" },
-];
 
 function parsePositiveInt(v: string | null, fallback: number): number {
   const n = Number(v);
@@ -95,9 +53,10 @@ function warehouseColumnLabel(
   }
 }
 
-function formatUpdated(iso: string): string {
+function formatUpdated(iso: string, locale: string): string {
+  const tag = locale === "en" ? "en-US" : "id-ID";
   try {
-    return new Date(iso).toLocaleString("id-ID", {
+    return new Date(iso).toLocaleString(tag, {
       dateStyle: "short",
       timeStyle: "short",
     });
@@ -107,9 +66,70 @@ function formatUpdated(iso: string): string {
 }
 
 export default function InventoryMovementsPage() {
+  const t = useTranslations("inventory.movements");
+  const tc = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const SORT_FIELDS = useMemo(
+    () =>
+      [
+        { value: "created_at" as const, label: t("sortCreated") },
+        { value: "updated_at" as const, label: t("sortUpdated") },
+        { value: "reference_number" as const, label: t("sortRef") },
+        { value: "status" as const, label: t("sortStatus") },
+        { value: "type" as const, label: t("sortType") },
+      ] as const,
+    [t],
+  );
+
+  const TYPE_OPTIONS = useMemo(
+    () =>
+      [
+        { value: "" as const, label: t("typeAll") },
+        { value: "inbound" as const, label: t("typeInbound") },
+        { value: "outbound" as const, label: t("typeOutbound") },
+        { value: "transfer" as const, label: t("typeTransfer") },
+        { value: "adjustment" as const, label: t("typeAdjustment") },
+      ] as const,
+    [t],
+  );
+
+  const STATUS_OPTIONS = useMemo(
+    () =>
+      [
+        { value: "" as const, label: t("statusAll") },
+        { value: "draft" as const, label: t("statusDraft") },
+        { value: "confirmed" as const, label: t("statusConfirmed") },
+        { value: "cancelled" as const, label: t("statusCancelled") },
+      ] as const,
+    [t],
+  );
+
+  const typeFilterItems = useMemo(
+    () => TYPE_OPTIONS.map((o) => ({ id: o.value, label: o.label })),
+    [TYPE_OPTIONS],
+  );
+
+  const statusFilterItems = useMemo(
+    () => STATUS_OPTIONS.map((o) => ({ id: o.value, label: o.label })),
+    [STATUS_OPTIONS],
+  );
+
+  const sortFilterItems = useMemo(
+    () => SORT_FIELDS.map((s) => ({ id: s.value, label: s.label })),
+    [SORT_FIELDS],
+  );
+
+  const orderFilterItems = useMemo(
+    () => [
+      { id: "desc", label: tc("desc") },
+      { id: "asc", label: tc("asc") },
+    ],
+    [tc],
+  );
 
   const [searchDraft, setSearchDraft] = useState(
     searchParams.get("search") ?? "",
@@ -224,12 +244,12 @@ export default function InventoryMovementsPage() {
   return (
     <DashboardPageTemplate gap="gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Movements</h1>
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <Button
           variant="primary"
           onPress={() => router.push("/inventory/movements/new")}
         >
-          + Buat movement
+          {t("create")}
         </Button>
       </div>
 
@@ -244,9 +264,9 @@ export default function InventoryMovementsPage() {
         }}
       >
         <InventorySelect
-          label="Jenis"
+          label={t("typeLabel")}
           className="min-w-[140px]"
-          items={TYPE_FILTER_ITEMS}
+          items={typeFilterItems}
           value={typeParam}
           onChange={(v) =>
             setQueryParams({
@@ -258,9 +278,9 @@ export default function InventoryMovementsPage() {
           }
         />
         <InventorySelect
-          label="Status"
+          label={t("statusLabel")}
           className="min-w-[140px]"
-          items={STATUS_FILTER_ITEMS}
+          items={statusFilterItems}
           value={statusParam}
           onChange={(v) =>
             setQueryParams({
@@ -272,28 +292,28 @@ export default function InventoryMovementsPage() {
           }
         />
         <InventorySearchField
-          label="Search"
+          label={t("searchLabel")}
           className="min-w-[200px] flex-1"
           fullWidth
-          placeholder="Nomor referensi…"
+          placeholder={t("searchPlaceholder")}
           value={searchDraft}
           onChange={setSearchDraft}
         />
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-default-600">Urut</span>
+          <span className="text-xs font-medium text-default-600">{tc("sort")}</span>
           <div className="flex flex-wrap gap-1">
             <InventorySelect
               className="min-w-[8rem]"
-              items={SORT_FILTER_ITEMS}
+              items={sortFilterItems}
               value={sort}
               onChange={(id) =>
                 setQueryParams({ page: 1, sort: id })
               }
-              ariaLabel="Kolom urut"
+              ariaLabel={tc("sortColumnAria")}
             />
             <InventorySelect
               className="min-w-[6rem]"
-              items={ORDER_FILTER_ITEMS}
+              items={orderFilterItems}
               value={order}
               onChange={(id) =>
                 setQueryParams({
@@ -301,12 +321,12 @@ export default function InventoryMovementsPage() {
                   order: id === "asc" ? "asc" : "desc",
                 })
               }
-              ariaLabel="Arah urut"
+              ariaLabel={tc("sortDirAria")}
             />
           </div>
         </div>
         <Button type="submit" variant="secondary" className="shrink-0">
-          Cari
+          {tc("search")}
         </Button>
       </form>
 
@@ -314,24 +334,24 @@ export default function InventoryMovementsPage() {
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead className="bg-default-100/60 text-left">
             <tr>
-              <th className="px-3 py-2 font-semibold">Ref</th>
-              <th className="px-3 py-2 font-semibold">Tipe</th>
-              <th className="px-3 py-2 font-semibold">Status</th>
-              <th className="px-3 py-2 font-semibold">Gudang</th>
-              <th className="px-3 py-2 font-semibold">Updated</th>
+              <th className="px-3 py-2 font-semibold">{t("tableRef")}</th>
+              <th className="px-3 py-2 font-semibold">{t("tableType")}</th>
+              <th className="px-3 py-2 font-semibold">{t("tableStatus")}</th>
+              <th className="px-3 py-2 font-semibold">{t("tableWarehouse")}</th>
+              <th className="px-3 py-2 font-semibold">{t("tableUpdated")}</th>
             </tr>
           </thead>
           <tbody>
             {listQuery.isLoading ? (
               <tr>
                 <td className="px-3 py-6 text-default-500" colSpan={5}>
-                  Memuat movements…
+                  {t("loading")}
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
                 <td className="px-3 py-6 text-default-500" colSpan={5}>
-                  Belum ada data.
+                  {tc("noData")}
                 </td>
               </tr>
             ) : (
@@ -351,7 +371,7 @@ export default function InventoryMovementsPage() {
                     {warehouseColumnLabel(item, warehouseCodeById)}
                   </td>
                   <td className="px-3 py-2 text-default-600 tabular-nums">
-                    {formatUpdated(item.updated_at)}
+                    {formatUpdated(item.updated_at, locale)}
                   </td>
                 </tr>
               ))
@@ -366,10 +386,10 @@ export default function InventoryMovementsPage() {
           onPress={() => setQueryParams({ page: Math.max(1, page - 1) })}
           isDisabled={page <= 1}
         >
-          {"< Prev"}
+          {tc("prev")}
         </Button>
         <div className="text-sm text-default-600">
-          hal {page} / {totalPages}
+          {tc("pageOf", { page, total: totalPages })}
         </div>
         <Button
           variant="secondary"
@@ -378,7 +398,7 @@ export default function InventoryMovementsPage() {
           }
           isDisabled={page >= totalPages}
         >
-          {"Next >"}
+          {tc("next")}
         </Button>
       </div>
     </DashboardPageTemplate>

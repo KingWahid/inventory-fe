@@ -16,10 +16,11 @@ import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
 import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
 import { PageHeader } from "@/components/ui/molecules/PageHeader";
 import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
+import { useRouter } from "@/i18n/navigation";
 import { queryKeys } from "@/lib/query-keys";
 import { Button, Input, Label, TextField } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 type LineDraft = {
@@ -34,16 +35,23 @@ const EMPTY_LINE = (): LineDraft => ({
   notes: "",
 });
 
-const TYPES: { value: MovementType; label: string }[] = [
-  { value: "inbound", label: "Inbound" },
-  { value: "outbound", label: "Outbound" },
-  { value: "transfer", label: "Transfer" },
-  { value: "adjustment", label: "Adjustment" },
-];
-
 export default function NewMovementPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useTranslations("inventory.movementsNew");
+  const tm = useTranslations("inventory.movements");
+  const terr = useTranslations("inventory.movementsNew.errors");
+  const tc = useTranslations("common");
+
+  const TYPE_OPTIONS: { value: MovementType; label: string }[] = useMemo(
+    () => [
+      { value: "inbound", label: tm("typeInbound") },
+      { value: "outbound", label: tm("typeOutbound") },
+      { value: "transfer", label: tm("typeTransfer") },
+      { value: "adjustment", label: tm("typeAdjustment") },
+    ],
+    [tm],
+  );
 
   const [movementType, setMovementType] = useState<MovementType>("inbound");
   const [referenceNumber, setReferenceNumber] = useState("");
@@ -78,40 +86,40 @@ export default function NewMovementPage() {
       listProducts({ page: 1, per_page: 500, sort: "sku", order: "asc" }),
   });
 
-  const warehouses = warehousesQuery.data?.data ?? [];
-  const products = productsQuery.data?.data ?? [];
+  const warehouseList = warehousesQuery.data?.data;
+  const productList = productsQuery.data?.data;
 
   const activeWarehouses = useMemo(
-    () => warehouses.filter((w) => w.is_active !== false),
-    [warehouses],
+    () => (warehouseList ?? []).filter((w) => w.is_active !== false),
+    [warehouseList],
   );
 
   const warehouseSelectItems = useMemo(
     () => [
-      { id: "", label: "— pilih —" },
+      { id: "", label: tc("pick") },
       ...activeWarehouses.map((w) => ({
         id: w.id,
         label: `${w.code} · ${w.name}`,
       })),
     ],
-    [activeWarehouses],
+    [activeWarehouses, tc],
   );
 
   const productSelectItems = useMemo(
     () => [
-      { id: "", label: "— produk —" },
-      ...products.map((p) => ({
+      { id: "", label: tc("pickProduct") },
+      ...(productList ?? []).map((p) => ({
         id: p.id,
         label: `${p.sku} · ${p.name}`,
       })),
     ],
-    [products],
+    [productList, tc],
   );
 
   const createMut = useMutation({
     mutationFn: async (idempotencyKey: string) => {
       const ref = referenceNumber.trim();
-      if (!ref) throw new Error("Nomor referensi wajib diisi.");
+      if (!ref) throw new Error(terr("refRequired"));
 
       const parsedLines: MovementLineCreateBody[] = [];
       for (const row of lines) {
@@ -119,7 +127,7 @@ export default function NewMovementPage() {
         const qty = Number(row.quantity);
         if (!pid) continue;
         if (!Number.isFinite(qty) || qty < 1 || !Number.isInteger(qty)) {
-          throw new Error("Setiap baris aktif harus berisi qty bilangan bulat ≥ 1.");
+          throw new Error(terr("lineQty"));
         }
         const note = row.notes.trim();
         const line: MovementLineCreateBody = {
@@ -130,7 +138,7 @@ export default function NewMovementPage() {
         parsedLines.push(line);
       }
       if (parsedLines.length === 0) {
-        throw new Error("Minimal satu baris dengan produk dan qty valid.");
+        throw new Error(terr("minLines"));
       }
 
       const notesTrim = movementNotes.trim();
@@ -139,8 +147,7 @@ export default function NewMovementPage() {
       switch (movementType) {
         case "inbound": {
           const d = destinationId.trim();
-          if (!d)
-            throw new Error("Pilih gudang tujuan.");
+          if (!d) throw new Error(terr("inboundDest"));
           return createInboundDraft(
             {
               reference_number: ref,
@@ -153,8 +160,7 @@ export default function NewMovementPage() {
         }
         case "outbound": {
           const s = sourceId.trim();
-          if (!s)
-            throw new Error("Pilih gudang asal.");
+          if (!s) throw new Error(terr("outboundSource"));
           return createOutboundDraft(
             {
               reference_number: ref,
@@ -168,10 +174,8 @@ export default function NewMovementPage() {
         case "transfer": {
           const s = sourceId.trim();
           const d = destinationId.trim();
-          if (!s || !d)
-            throw new Error("Pilih gudang asal dan tujuan.");
-          if (s === d)
-            throw new Error("Gudang asal dan tujuan harus berbeda.");
+          if (!s || !d) throw new Error(terr("transferBoth"));
+          if (s === d) throw new Error(terr("transferDistinct"));
           return createTransferDraft(
             {
               reference_number: ref,
@@ -185,8 +189,7 @@ export default function NewMovementPage() {
         }
         case "adjustment": {
           const w = adjustWarehouseId.trim();
-          if (!w)
-            throw new Error("Pilih gudang untuk penyesuaian.");
+          if (!w) throw new Error(terr("adjustWh"));
           const body: AdjustmentCreateBody =
             adjustSide === "source"
               ? {
@@ -204,7 +207,7 @@ export default function NewMovementPage() {
           return createAdjustmentDraft(body, idempotencyKey);
         }
         default:
-          throw new Error("Tipe movement tidak dikenal.");
+          throw new Error(terr("unknownType"));
       }
     },
     onSuccess: (movement) => {
@@ -233,10 +236,14 @@ export default function NewMovementPage() {
 
   return (
     <DashboardPageTemplate>
-      <PageHeader backHref="/inventory/movements" title="Buat movement" />
+      <PageHeader
+        backHref="/inventory/movements"
+        title={t("title")}
+        backLabel={t("backList")}
+      />
 
       {createMut.error ? (
-        <ApiErrorAlert title="Gagal menyimpan draft">
+        <ApiErrorAlert title={t("draftFailTitle")}>
           {userFacingApiMessage(createMut.error)}
         </ApiErrorAlert>
       ) : null}
@@ -244,36 +251,36 @@ export default function NewMovementPage() {
       <section className="flex flex-col gap-4 rounded-lg border border-default-200 p-4 dark:border-default-100">
         <div className="flex flex-wrap gap-2">
           <span className="mr-2 text-sm font-medium text-default-700">
-            Tipe:
+            {t("type")}
           </span>
-          {TYPES.map((t) => (
+          {TYPE_OPTIONS.map((opt) => (
             <button
-              key={t.value}
+              key={opt.value}
               type="button"
               className={`min-h-11 rounded-md px-3 py-1.5 text-sm font-medium transition-colors sm:min-h-0 ${
-                movementType === t.value
+                movementType === opt.value
                   ? "bg-primary text-primary-foreground"
                   : "border border-default-300 bg-background hover:bg-default-100 dark:border-default-100"
               }`}
-              onClick={() => setMovementType(t.value)}
+              onClick={() => setMovementType(opt.value)}
             >
-              {t.label}
+              {opt.label}
             </button>
           ))}
         </div>
 
         <TextField fullWidth className="max-w-xl" name="reference_number">
-          <Label>Nomor referensi</Label>
+          <Label>{t("refLabel")}</Label>
           <Input
             value={referenceNumber}
             onChange={(e) => setReferenceNumber(e.target.value)}
-            placeholder="MOV-..."
+            placeholder={t("refPlaceholder")}
             autoComplete="off"
           />
         </TextField>
 
         <TextField fullWidth className="max-w-xl" name="movement_notes">
-          <Label>Catatan movement</Label>
+          <Label>{t("movementNotes")}</Label>
           <Input
             value={movementNotes}
             onChange={(e) => setMovementNotes(e.target.value)}
@@ -282,10 +289,10 @@ export default function NewMovementPage() {
 
         {movementType === "inbound" ? (
           <InventorySelect
-            label="Gudang tujuan"
+            label={t("destWh")}
             fullWidth
             className="max-w-xl"
-            placeholder="— pilih —"
+            placeholder={tc("pick")}
             items={warehouseSelectItems}
             value={destinationId}
             onChange={setDestinationId}
@@ -294,10 +301,10 @@ export default function NewMovementPage() {
 
         {movementType === "outbound" ? (
           <InventorySelect
-            label="Gudang asal"
+            label={t("sourceWh")}
             fullWidth
             className="max-w-xl"
-            placeholder="— pilih —"
+            placeholder={tc("pick")}
             items={warehouseSelectItems}
             value={sourceId}
             onChange={setSourceId}
@@ -307,19 +314,19 @@ export default function NewMovementPage() {
         {movementType === "transfer" ? (
           <div className="flex flex-wrap gap-4">
             <InventorySelect
-              label="Gudang asal"
+              label={t("sourceWh")}
               fullWidth
               className="min-w-[200px] flex-1 max-w-none"
-              placeholder="— pilih —"
+              placeholder={tc("pick")}
               items={warehouseSelectItems}
               value={sourceId}
               onChange={setSourceId}
             />
             <InventorySelect
-              label="Gudang tujuan"
+              label={t("destWh")}
               fullWidth
               className="min-w-[200px] flex-1 max-w-none"
-              placeholder="— pilih —"
+              placeholder={tc("pick")}
               items={warehouseSelectItems}
               value={destinationId}
               onChange={setDestinationId}
@@ -337,7 +344,7 @@ export default function NewMovementPage() {
                   checked={adjustSide === "destination"}
                   onChange={() => setAdjustSide("destination")}
                 />
-                Tambah stok (gudang tujuan)
+                {t("addStock")}
               </label>
               <label className="flex min-h-11 cursor-pointer items-center gap-2 sm:min-h-0">
                 <input
@@ -346,14 +353,14 @@ export default function NewMovementPage() {
                   checked={adjustSide === "source"}
                   onChange={() => setAdjustSide("source")}
                 />
-                Kurangi stok (gudang asal)
+                {t("reduceStock")}
               </label>
             </div>
             <InventorySelect
-              label="Gudang"
+              label={t("warehouse")}
               fullWidth
               className="max-w-xl"
-              placeholder="— pilih —"
+              placeholder={tc("pick")}
               items={warehouseSelectItems}
               value={adjustWarehouseId}
               onChange={setAdjustWarehouseId}
@@ -364,9 +371,9 @@ export default function NewMovementPage() {
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold">Lines</h2>
+          <h2 className="text-lg font-semibold">{t("lines")}</h2>
           <Button type="button" variant="secondary" size="sm" onPress={addLine}>
-            + Baris
+            {t("addRow")}
           </Button>
         </div>
 
@@ -374,9 +381,9 @@ export default function NewMovementPage() {
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead className="bg-default-100/60 text-left">
               <tr>
-                <th className="px-3 py-2 font-semibold">Produk</th>
-                <th className="w-24 px-3 py-2 font-semibold">Qty</th>
-                <th className="min-w-[120px] px-3 py-2 font-semibold">Catatan</th>
+                <th className="px-3 py-2 font-semibold">{tc("product")}</th>
+                <th className="w-24 px-3 py-2 font-semibold">{tc("qty")}</th>
+                <th className="min-w-[120px] px-3 py-2 font-semibold">{tc("notes")}</th>
                 <th className="w-20 px-3 py-2 text-right font-semibold"> </th>
               </tr>
             </thead>
@@ -385,10 +392,10 @@ export default function NewMovementPage() {
                 <tr key={index} className="border-t border-default-200">
                   <td className="px-3 py-2">
                     <InventorySelect
-                      ariaLabel={`Produk baris ${index + 1}`}
+                      ariaLabel={t("lineProductAria", { n: index + 1 })}
                       className="w-full max-w-xs"
                       variant="secondary"
-                      placeholder="— produk —"
+                      placeholder={tc("pickProduct")}
                       items={productSelectItems}
                       value={line.product_id}
                       onChange={(id) =>
@@ -398,7 +405,7 @@ export default function NewMovementPage() {
                   </td>
                   <td className="px-3 py-2">
                     <Input
-                      aria-label={`Qty baris ${index + 1}`}
+                      aria-label={t("lineQtyAria", { n: index + 1 })}
                       type="number"
                       min={1}
                       step={1}
@@ -411,13 +418,13 @@ export default function NewMovementPage() {
                   </td>
                   <td className="px-3 py-2">
                     <Input
-                      aria-label={`Catatan baris ${index + 1}`}
+                      aria-label={t("lineNotesAria", { n: index + 1 })}
                       className="w-full"
                       value={line.notes}
                       onChange={(e) =>
                         updateLine(index, { notes: e.target.value })
                       }
-                      placeholder="Opsional"
+                      placeholder={tc("optional")}
                     />
                   </td>
                   <td className="px-3 py-2 text-right">
@@ -428,7 +435,7 @@ export default function NewMovementPage() {
                       isDisabled={lines.length <= 1}
                       onPress={() => removeLine(index)}
                     >
-                      Hapus
+                      {t("removeRow")}
                     </Button>
                   </td>
                 </tr>
@@ -444,12 +451,9 @@ export default function NewMovementPage() {
           onPress={() => createMut.mutate(crypto.randomUUID())}
           isDisabled={createMut.isPending}
         >
-          {createMut.isPending ? "Menyimpan…" : "Simpan draft"}
+          {createMut.isPending ? t("saving") : t("saveDraft")}
         </Button>
-        <p className="text-xs text-default-500">
-          Setiap simpan mengirim header <code className="font-mono">Idempotency-Key</code>{" "}
-          (UUID baru).
-        </p>
+        <p className="text-xs text-default-500">{t("idempotencyHint")}</p>
       </div>
     </DashboardPageTemplate>
   );

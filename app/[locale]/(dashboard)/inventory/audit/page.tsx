@@ -8,27 +8,16 @@ import {
 import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
 import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
 import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 
 const DEFAULT_PER_PAGE = 20;
-
-const ENTITY_OPTIONS = [
-  { value: "", label: "Semua entity" },
-  { value: "category", label: "category" },
-  { value: "product", label: "product" },
-  { value: "warehouse", label: "warehouse" },
-  { value: "movement", label: "movement" },
-] as const;
-
-const ENTITY_FILTER_ITEMS = ENTITY_OPTIONS.map((o) => ({
-  id: o.value,
-  label: o.label,
-}));
 
 function parsePositiveInt(v: string | null, fallback: number): number {
   const n = Number(v);
@@ -36,9 +25,10 @@ function parsePositiveInt(v: string | null, fallback: number): number {
   return Math.floor(n);
 }
 
-function formatWhen(iso: string): string {
+function formatWhen(iso: string, locale: string): string {
+  const tag = locale === "en" ? "en-US" : "id-ID";
   try {
-    return new Date(iso).toLocaleString("id-ID", {
+    return new Date(iso).toLocaleString(tag, {
       dateStyle: "short",
       timeStyle: "medium",
     });
@@ -72,9 +62,23 @@ function isoToDatetimeLocal(iso: string): string {
 }
 
 export default function InventoryAuditPage() {
+  const t = useTranslations("inventory.audit");
+  const tc = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const ENTITY_FILTER_ITEMS = useMemo(
+    () => [
+      { id: "", label: t("entityAll") },
+      { id: "category", label: t("entityCategory") },
+      { id: "product", label: t("entityProduct") },
+      { id: "warehouse", label: t("entityWarehouse") },
+      { id: "movement", label: t("entityMovement") },
+    ],
+    [t],
+  );
 
   const page = parsePositiveInt(searchParams.get("page"), 1);
   const per_page = parsePositiveInt(
@@ -202,7 +206,7 @@ export default function InventoryAuditPage() {
   return (
     <DashboardPageTemplate gap="gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Audit log</h1>
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
       </div>
 
       <form
@@ -214,7 +218,7 @@ export default function InventoryAuditPage() {
       >
         <div className="flex flex-wrap items-end gap-3">
           <InventorySelect
-            label="Entity"
+            label={t("entity")}
             className="min-w-[160px]"
             items={ENTITY_FILTER_ITEMS}
             value={entity}
@@ -226,23 +230,23 @@ export default function InventoryAuditPage() {
             }
           />
           <div className="flex min-w-[140px] flex-col gap-1">
-            <label className="text-xs font-medium text-default-600">Aksi</label>
+            <label className="text-xs font-medium text-default-600">{t("action")}</label>
             <input
               className="rounded-md border border-default-300 bg-background px-3 py-2 text-sm"
-              placeholder="mis. CONFIRM"
+              placeholder={t("actionPlaceholder")}
               value={actionDraft}
               onChange={(e) => setActionDraft(e.target.value)}
             />
           </div>
           <Button type="submit" variant="secondary" className="shrink-0">
-            Terapkan filter
+            {t("apply")}
           </Button>
           <button
             type="button"
             className="text-sm text-primary underline-offset-2 hover:underline"
             onClick={() => setShowAdvanced((s) => !s)}
           >
-            {showAdvanced ? "Sembunyikan lanjutan" : "Filter lanjutan"}
+            {showAdvanced ? t("advancedHide") : t("advancedShow")}
           </button>
         </div>
 
@@ -250,29 +254,29 @@ export default function InventoryAuditPage() {
           <div className="flex flex-wrap items-end gap-3 rounded-lg border border-default-200 bg-default-50/50 p-3 dark:bg-default-50/5">
             <div className="flex min-w-[260px] flex-1 flex-col gap-1">
               <label className="text-xs font-medium text-default-600">
-                Entity ID (UUID)
+                {t("entityId")}
               </label>
               <input
                 className="w-full rounded-md border border-default-300 bg-background px-3 py-2 font-mono text-sm"
-                placeholder="uuid…"
+                placeholder={tc("uuidPlaceholder")}
                 value={entityIdDraft}
                 onChange={(e) => setEntityIdDraft(e.target.value)}
               />
             </div>
             <div className="flex min-w-[260px] flex-1 flex-col gap-1">
               <label className="text-xs font-medium text-default-600">
-                User ID (UUID)
+                {t("userId")}
               </label>
               <input
                 className="w-full rounded-md border border-default-300 bg-background px-3 py-2 font-mono text-sm"
-                placeholder="uuid…"
+                placeholder={tc("uuidPlaceholder")}
                 value={userIdDraft}
                 onChange={(e) => setUserIdDraft(e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-default-600">
-                Dari waktu
+                {t("fromTime")}
               </label>
               <input
                 type="datetime-local"
@@ -283,7 +287,7 @@ export default function InventoryAuditPage() {
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-default-600">
-                Sampai waktu
+                {t("toTime")}
               </label>
               <input
                 type="datetime-local"
@@ -297,7 +301,7 @@ export default function InventoryAuditPage() {
       </form>
 
       {err ? (
-        <ApiErrorAlert title="Gagal memuat audit log">
+        <ApiErrorAlert title={t("loadFail")}>
           {userFacingApiMessage(err)}
         </ApiErrorAlert>
       ) : null}
@@ -306,31 +310,31 @@ export default function InventoryAuditPage() {
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead className="bg-default-100/60 text-left">
             <tr>
-              <th className="px-3 py-2 font-semibold">Waktu</th>
-              <th className="px-3 py-2 font-semibold">Aksi</th>
-              <th className="px-3 py-2 font-semibold">Entity</th>
-              <th className="px-3 py-2 font-semibold">Id</th>
-              <th className="px-3 py-2 font-semibold">User</th>
+              <th className="px-3 py-2 font-semibold">{t("tableTime")}</th>
+              <th className="px-3 py-2 font-semibold">{t("tableAction")}</th>
+              <th className="px-3 py-2 font-semibold">{t("tableEntity")}</th>
+              <th className="px-3 py-2 font-semibold">{t("tableId")}</th>
+              <th className="px-3 py-2 font-semibold">{t("tableUser")}</th>
             </tr>
           </thead>
           <tbody>
             {listQuery.isLoading ? (
               <tr>
                 <td className="px-3 py-6 text-default-500" colSpan={5}>
-                  Memuat audit log…
+                  {t("loading")}
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
                 <td className="px-3 py-6 text-default-500" colSpan={5}>
-                  Tidak ada entri.
+                  {t("empty")}
                 </td>
               </tr>
             ) : (
               rows.map((item: AuditLog) => (
                 <tr key={item.id} className="border-t border-default-200">
                   <td className="px-3 py-2 tabular-nums text-default-700">
-                    {formatWhen(item.created_at)}
+                    {formatWhen(item.created_at, locale)}
                   </td>
                   <td className="px-3 py-2">{item.action}</td>
                   <td className="px-3 py-2">{item.entity}</td>
@@ -357,10 +361,10 @@ export default function InventoryAuditPage() {
           onPress={() => setQueryParams({ page: Math.max(1, page - 1) })}
           isDisabled={page <= 1}
         >
-          {"< Prev"}
+          {tc("prev")}
         </Button>
         <div className="text-sm text-default-600">
-          hal {page} / {totalPages}
+          {tc("pageOf", { page, total: totalPages })}
         </div>
         <Button
           variant="secondary"
@@ -369,7 +373,7 @@ export default function InventoryAuditPage() {
           }
           isDisabled={page >= totalPages}
         >
-          {"Next >"}
+          {tc("next")}
         </Button>
       </div>
     </DashboardPageTemplate>

@@ -5,6 +5,7 @@ import { InventorySearchField } from "@/components/ui/molecules/InventorySearchF
 import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
 import { WarehouseFormModal } from "@/components/ui/organisms/warehouse/WarehouseFormModal";
 import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import {
   createWarehouse,
   deleteWarehouse,
@@ -27,7 +28,8 @@ import {
   IconChevronDown,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 type ModalState =
@@ -36,24 +38,6 @@ type ModalState =
   | { open: true; mode: "edit"; warehouse: Warehouse };
 
 const DEFAULT_PER_PAGE = 20;
-
-const SORT_FIELDS = [
-  { value: "name", label: "Nama" },
-  { value: "code", label: "Kode" },
-  { value: "created_at", label: "Dibuat" },
-  { value: "updated_at", label: "Diubah" },
-  { value: "is_active", label: "Aktif" },
-] as const;
-
-const SORT_FILTER_ITEMS = SORT_FIELDS.map((s) => ({
-  id: s.value,
-  label: s.label,
-}));
-
-const ORDER_FILTER_ITEMS = [
-  { id: "asc", label: "Naik" },
-  { id: "desc", label: "Turun" },
-];
 
 function parsePositiveInt(v: string | null, fallback: number): number {
   const n = Number(v);
@@ -68,10 +52,37 @@ function truncateAddress(s: string, max = 48): string {
 }
 
 export default function InventoryWarehousesPage() {
+  const t = useTranslations("inventory.warehouses");
+  const tc = useTranslations("common");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+
+  const SORT_FIELDS = useMemo(
+    () =>
+      [
+        { value: "name" as const, label: t("sortName") },
+        { value: "code" as const, label: t("sortCode") },
+        { value: "created_at" as const, label: t("sortCreated") },
+        { value: "updated_at" as const, label: t("sortUpdated") },
+        { value: "is_active" as const, label: t("sortActive") },
+      ] as const,
+    [t],
+  );
+
+  const sortFilterItems = useMemo(
+    () => SORT_FIELDS.map((s) => ({ id: s.value, label: s.label })),
+    [SORT_FIELDS],
+  );
+
+  const orderFilterItems = useMemo(
+    () => [
+      { id: "asc", label: tc("asc") },
+      { id: "desc", label: tc("desc") },
+    ],
+    [tc],
+  );
 
   const [searchDraft, setSearchDraft] = useState(
     searchParams.get("search") ?? "",
@@ -179,19 +190,19 @@ export default function InventoryWarehousesPage() {
   return (
     <DashboardPageTemplate gap="gap-4">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Gudang</h1>
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <Button
           variant="primary"
           onPress={() =>
             setModalState({ open: true, mode: "create", warehouse: null })
           }
         >
-          + Tambah
+          {tc("adding")}
         </Button>
       </div>
 
       {mutationError ? (
-        <ApiErrorAlert title="Operasi gagal">
+        <ApiErrorAlert title={tc("operationFailed")}>
           {userFacingApiMessage(mutationError)}
         </ApiErrorAlert>
       ) : null}
@@ -204,28 +215,28 @@ export default function InventoryWarehousesPage() {
         }}
       >
         <InventorySearchField
-          label="Cari"
+          label={tc("search")}
           className="min-w-[200px] flex-1"
           fullWidth
-          placeholder="Kode, nama, alamat…"
+          placeholder={t("searchPlaceholder")}
           value={searchDraft}
           onChange={setSearchDraft}
         />
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-default-600">Urut</span>
+          <span className="text-xs font-medium text-default-600">{tc("sort")}</span>
           <div className="flex flex-wrap gap-1">
             <InventorySelect
               className="min-w-[8.5rem]"
-              items={SORT_FILTER_ITEMS}
+              items={sortFilterItems}
               value={sort}
               onChange={(id) =>
                 setQueryParams({ page: 1, sort: id })
               }
-              ariaLabel="Kolom urut"
+              ariaLabel={tc("sortColumnAria")}
             />
             <InventorySelect
               className="min-w-[6rem]"
-              items={ORDER_FILTER_ITEMS}
+              items={orderFilterItems}
               value={order}
               onChange={(id) =>
                 setQueryParams({
@@ -233,12 +244,12 @@ export default function InventoryWarehousesPage() {
                   order: id === "desc" ? "desc" : "asc",
                 })
               }
-              ariaLabel="Arah urut"
+              ariaLabel={tc("sortDirAria")}
             />
           </div>
         </div>
         <Button type="submit" variant="secondary" className="shrink-0">
-          Cari
+          {tc("search")}
         </Button>
       </form>
 
@@ -246,24 +257,24 @@ export default function InventoryWarehousesPage() {
         <table className="w-full min-w-[840px] border-collapse text-sm">
           <thead className="bg-default-100/60 text-left">
             <tr>
-              <th className="px-3 py-2 font-semibold">Kode</th>
-              <th className="px-3 py-2 font-semibold">Nama</th>
-              <th className="px-3 py-2 font-semibold">Aktif</th>
-              <th className="px-3 py-2 font-semibold">Alamat</th>
-              <th className="px-3 py-2 text-right font-semibold">Aksi</th>
+              <th className="px-3 py-2 font-semibold">{t("tableCode")}</th>
+              <th className="px-3 py-2 font-semibold">{t("tableName")}</th>
+              <th className="px-3 py-2 font-semibold">{t("tableActive")}</th>
+              <th className="px-3 py-2 font-semibold">{t("tableAddress")}</th>
+              <th className="px-3 py-2 text-right font-semibold">{t("tableActions")}</th>
             </tr>
           </thead>
           <tbody>
             {listQuery.isLoading ? (
               <tr>
                 <td className="px-3 py-6 text-default-500" colSpan={5}>
-                  Memuat gudang...
+                  {t("loading")}
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
                 <td className="px-3 py-6 text-default-500" colSpan={5}>
-                  Belum ada data.
+                  {tc("noData")}
                 </td>
               </tr>
             ) : (
@@ -279,7 +290,7 @@ export default function InventoryWarehousesPage() {
                           : "text-default-500"
                       }
                     >
-                      {item.is_active ? "Ya" : "Tidak"}
+                      {item.is_active ? tc("yes") : tc("no")}
                     </span>
                   </td>
                   <td className="max-w-[280px] px-3 py-2 text-default-600">
@@ -288,12 +299,12 @@ export default function InventoryWarehousesPage() {
                   <td className="px-3 py-2 text-right">
                     <Dropdown>
                       <DropdownTrigger className="inline-flex h-8 cursor-pointer items-center gap-1 rounded-md border border-default-200 bg-default-100 px-3 text-sm font-medium text-default-900 hover:bg-default-200 dark:border-default-100 dark:bg-default-50/10 dark:text-default-50 dark:hover:bg-default-50/15">
-                        Aksi
+                        {tc("actions")}
                         <IconChevronDown className="size-4 opacity-70" />
                       </DropdownTrigger>
                       <DropdownPopover placement="bottom end">
                         <DropdownMenu
-                          aria-label="Aksi gudang"
+                          aria-label={t("ariaWarehouseActions")}
                           onAction={(key) => {
                             if (key === "edit") {
                               setModalState({
@@ -307,11 +318,11 @@ export default function InventoryWarehousesPage() {
                             }
                           }}
                         >
-                          <DropdownItem key="edit" textValue="Edit">
-                            Edit
+                          <DropdownItem key="edit" textValue={tc("edit")}>
+                            {tc("edit")}
                           </DropdownItem>
-                          <DropdownItem key="delete" textValue="Delete">
-                            Delete
+                          <DropdownItem key="delete" textValue={tc("delete")}>
+                            {tc("delete")}
                           </DropdownItem>
                         </DropdownMenu>
                       </DropdownPopover>
@@ -330,10 +341,10 @@ export default function InventoryWarehousesPage() {
           onPress={() => setQueryParams({ page: Math.max(1, page - 1) })}
           isDisabled={page <= 1}
         >
-          {"< Prev"}
+          {tc("prev")}
         </Button>
         <div className="text-sm text-default-600">
-          hal {page} / {totalPages}
+          {tc("pageOf", { page, total: totalPages })}
         </div>
         <Button
           variant="secondary"
@@ -342,7 +353,7 @@ export default function InventoryWarehousesPage() {
           }
           isDisabled={page >= totalPages}
         >
-          {"Next >"}
+          {tc("next")}
         </Button>
       </div>
 
@@ -367,11 +378,12 @@ export default function InventoryWarehousesPage() {
       {deleteTarget ? (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-lg border border-default-200 bg-background p-5 shadow-xl dark:border-default-100">
-            <h3 className="text-lg font-semibold">Hapus gudang</h3>
+            <h3 className="text-lg font-semibold">{t("deleteTitle")}</h3>
             <p className="mt-2 text-sm text-default-600">
-              Yakin hapus gudang{" "}
-              <span className="font-medium">{deleteTarget.name}</span> (
-              {deleteTarget.code})?
+              {t("deleteConfirm", {
+                name: deleteTarget.name,
+                code: deleteTarget.code,
+              })}
             </p>
             <div className="mt-4 flex justify-end gap-2">
               <Button
@@ -379,14 +391,14 @@ export default function InventoryWarehousesPage() {
                 onPress={() => setDeleteTarget(null)}
                 isDisabled={deleteMut.isPending}
               >
-                Batal
+                {tc("cancel")}
               </Button>
               <Button
                 variant="primary"
                 onPress={() => deleteMut.mutate(deleteTarget.id)}
                 isDisabled={deleteMut.isPending}
               >
-                {deleteMut.isPending ? "Menghapus..." : "Delete"}
+                {deleteMut.isPending ? tc("deleting") : tc("delete")}
               </Button>
             </div>
           </div>
