@@ -39,14 +39,25 @@
   "auth": {
     "login": {
       "title": "Inventory",
+      "brand": "The Architectural Ledger",
+      "leftHeadline": "Precision in every single entry.",
+      "leftSubhead": "Institutional control for complex inventory ecosystems. Experience the fusion of brutalist precision and editorial clarity.",
+      "leftFooter": "Institutional trust and precision",
+      "welcomeTitle": "Welcome Back",
+      "welcomeSubtitle": "Access the institutional ledger for secure asset management.",
       "failTitle": "Sign-in failed",
       "email": "Email",
       "password": "Password",
+      "forgot": "Forgot?",
       "submit": "Sign in",
       "processing": "Processing…",
       "emailPlaceholder": "you@business.test",
       "passwordPlaceholder": "••••••••",
-      "registerLink": "Register new tenant"
+      "registerHint": "Don't have an institutional account?",
+      "registerLink": "Register new tenant",
+      "copyright": "© 2026 Architectural Ledger",
+      "legal": "Legal",
+      "privacy": "Privacy"
     },
     "register": {
       "title": "Register tenant",

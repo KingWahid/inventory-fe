@@ -39,14 +39,25 @@
   "auth": {
     "login": {
       "title": "Inventory",
+      "brand": "The Architectural Ledger",
+      "leftHeadline": "Precision in every single entry.",
+      "leftSubhead": "Institutional control for complex inventory ecosystems. Experience the fusion of brutalist precision and editorial clarity.",
+      "leftFooter": "Institutional trust and precision",
+      "welcomeTitle": "Selamat Datang Kembali",
+      "welcomeSubtitle": "Akses ledger institusional untuk pengelolaan aset yang aman.",
       "failTitle": "Gagal masuk",
       "email": "Email",
       "password": "Password",
+      "forgot": "Lupa?",
       "submit": "Masuk",
       "processing": "Memproses…",
       "emailPlaceholder": "nama@bisnis.test",
       "passwordPlaceholder": "••••••••",
-      "registerLink": "Daftar tenant baru"
+      "registerHint": "Belum punya akun institusional?",
+      "registerLink": "Daftar tenant baru",
+      "copyright": "© 2026 Architectural Ledger",
+      "legal": "Ketentuan",
+      "privacy": "Privasi"
     },
     "register": {
       "title": "Daftar tenant",

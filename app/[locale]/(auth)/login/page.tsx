@@ -34,55 +34,103 @@ export default function LoginPage() {
     mutation.isError ? userFacingApiMessage(mutation.error) : null;
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+    <div className="fixed inset-0 z-50 bg-white">
+      <div className="grid min-h-screen lg:grid-cols-2">
+        <section className="relative hidden overflow-hidden bg-[#02395b] text-white lg:flex lg:flex-col lg:justify-between lg:p-8 xl:p-12">
+          <p className="text-xl font-semibold tracking-tight">{t("brand")}</p>
+          <div className="relative z-10 max-w-lg">
+            <h1 className="text-6xl font-semibold leading-[1.05] tracking-tight">
+              {t("leftHeadline")}
+            </h1>
+            <p className="mt-6 text-lg leading-relaxed text-white/80">
+              {t("leftSubhead")}
+            </p>
+          </div>
+          <p className="text-xs uppercase tracking-[0.4em] text-white/70">
+            {t("leftFooter")}
+          </p>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-black/20 to-transparent" />
+          <div className="pointer-events-none absolute bottom-[16%] right-[10%] h-[58%] w-[38%] rounded-2xl border border-white/10 bg-white/10 shadow-2xl backdrop-blur-sm" />
+        </section>
+
+        <section className="flex min-h-screen items-center justify-center px-6 py-10 sm:px-10 lg:px-16">
+          <div className="w-full max-w-md space-y-8">
+            <div>
+              <h2 className="text-4xl font-semibold tracking-tight text-[#101214]">
+                {t("welcomeTitle")}
+              </h2>
+              <p className="mt-2 text-sm text-default-600">{t("welcomeSubtitle")}</p>
+            </div>
+
+            <form className="space-y-5" onSubmit={onSubmit} noValidate>
+              {errorMessage ? (
+                <ApiErrorAlert title={t("failTitle")}>{errorMessage}</ApiErrorAlert>
+              ) : null}
+
+              <TextField fullWidth name="email" type="email" autoComplete="email">
+                <Label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2e3440]">
+                  {t("email")}
+                </Label>
+                <Input
+                  placeholder={t("emailPlaceholder")}
+                  value={email}
+                  onChange={(ev) => setEmail(ev.target.value)}
+                  disabled={mutation.isPending}
+                />
+              </TextField>
+
+              <TextField
+                fullWidth
+                name="password"
+                type="password"
+                autoComplete="current-password"
+              >
+                <div className="flex items-center justify-between">
+                  <Label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2e3440]">
+                    {t("password")}
+                  </Label>
+                  <span className="text-xs text-default-500">{t("forgot")}</span>
+                </div>
+                <Input
+                  placeholder={t("passwordPlaceholder")}
+                  value={password}
+                  onChange={(ev) => setPassword(ev.target.value)}
+                  disabled={mutation.isPending}
+                />
+              </TextField>
+
+              <Button
+                type="submit"
+                variant="primary"
+                isDisabled={mutation.isPending}
+                className="mt-2 h-12 w-full rounded-md text-base font-semibold"
+              >
+                {mutation.isPending ? (
+                  <>
+                    <Spinner color="current" size="sm" />
+                    {t("processing")}
+                  </>
+                ) : (
+                  t("submit")
+                )}
+              </Button>
+            </form>
+
+            <div className="border-t border-default-200 pt-6 text-sm text-default-600">
+              <span>{t("registerHint")} </span>
+              <Link href="/register" className="font-semibold text-[#02395b] hover:underline">
+                {t("registerLink")}
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-6 text-xs uppercase tracking-[0.18em] text-default-500">
+              <span>{t("copyright")}</span>
+              <span>{t("legal")}</span>
+              <span>{t("privacy")}</span>
+            </div>
+          </div>
+        </section>
       </div>
-
-      <form className="flex flex-col gap-6" onSubmit={onSubmit} noValidate>
-        {errorMessage ? (
-          <ApiErrorAlert title={t("failTitle")}>{errorMessage}</ApiErrorAlert>
-        ) : null}
-
-        <TextField fullWidth name="email" type="email" autoComplete="email">
-          <Label>{t("email")}</Label>
-          <Input
-            placeholder={t("emailPlaceholder")}
-            value={email}
-            onChange={(ev) => setEmail(ev.target.value)}
-            disabled={mutation.isPending}
-          />
-        </TextField>
-
-        <TextField fullWidth name="password" type="password" autoComplete="current-password">
-          <Label>{t("password")}</Label>
-          <Input
-            placeholder={t("passwordPlaceholder")}
-            value={password}
-            onChange={(ev) => setPassword(ev.target.value)}
-            disabled={mutation.isPending}
-          />
-        </TextField>
-
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <Button type="submit" variant="primary" isDisabled={mutation.isPending}>
-            {mutation.isPending ? (
-              <>
-                <Spinner color="current" size="sm" />
-                {t("processing")}
-              </>
-            ) : (
-              t("submit")
-            )}
-          </Button>
-          <Link
-            href="/register"
-            className="text-sm text-primary underline-offset-4 hover:underline"
-          >
-            {t("registerLink")}
-          </Link>
-        </div>
-      </form>
     </div>
   );
 }
