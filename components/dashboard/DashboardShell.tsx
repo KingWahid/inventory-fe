@@ -113,7 +113,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-b border-default-200 bg-white px-4 py-3 sm:px-6">
+        <header className="border-b border-default-200 bg-white px-4 py-2.5 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <Button
@@ -135,7 +135,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             <div className="flex items-center gap-2">
               <LocaleSwitcher />
               <Dropdown>
-                <DropdownTrigger className="inline-flex min-h-10 cursor-pointer items-center gap-1 rounded-md border border-default-200 bg-white px-3 text-sm font-medium text-default-800 hover:bg-default-100 data-[focus-visible]:ring-2 data-[focus-visible]:ring-focus">
+                <DropdownTrigger className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-md border border-default-200 bg-white px-3 text-sm font-medium text-default-800 hover:bg-default-100 data-[focus-visible]:ring-2 data-[focus-visible]:ring-focus">
                   {t("user")}
                   <IconChevronDown className="size-4 opacity-70" />
                 </DropdownTrigger>
@@ -156,7 +156,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               <Button
                 variant="primary"
                 size="sm"
-                className="min-h-10 px-4"
+                className="min-h-9 px-4"
                 onPress={() => logoutMut.mutate()}
                 isDisabled={logoutMut.isPending}
               >

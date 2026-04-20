@@ -29,7 +29,7 @@ export function SummaryStatCard({
         </span>
       </div>
       <div
-        className={`mt-3 text-5xl font-semibold leading-none tabular-nums ${tone === "danger" ? "text-danger-700" : "text-[#111827]"}`}
+        className={`mt-3 text-4xl font-semibold leading-none tabular-nums ${tone === "danger" ? "text-danger-700" : "text-[#111827]"}`}
       >
         {loading ? (
           <span className="inline-block h-10 w-16 animate-pulse rounded bg-default-200" />
@@ -39,7 +39,7 @@ export function SummaryStatCard({
       </div>
       {subtitle ? (
         <div
-          className={`mt-2 text-sm italic ${tone === "danger" ? "text-danger-500" : "text-default-500"}`}
+          className={`mt-2 text-sm ${tone === "danger" ? "text-danger-500" : "text-default-500"}`}
         >
           {subtitle}
         </div>

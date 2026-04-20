@@ -146,7 +146,7 @@ export default function DashboardPage() {
     <DashboardPageTemplate>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-semibold tracking-tight text-[#02395b]">{t("title")}</h1>
+          <h1 className="text-5xl font-semibold tracking-tight text-[#02395b]">{t("title")}</h1>
           <p className="mt-1 text-sm text-default-600">{t("cacheHint")}</p>
         </div>
         <StockLiveIndicator />
@@ -205,7 +205,7 @@ export default function DashboardPage() {
         <div className="rounded-xl border border-default-200 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-4xl font-semibold tracking-tight text-[#02395b]">{t("chartTitle")}</h2>
+              <h2 className="text-5xl font-semibold tracking-tight text-[#02395b]">{t("chartTitle")}</h2>
               <p className="mt-1 text-sm text-default-600">{t("chartSubtitle")}</p>
             </div>
             <div className="flex items-center gap-2">
@@ -279,7 +279,7 @@ export default function DashboardPage() {
           <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-[#02395b]">
             {t("warehouseActivityTitle")}
           </h3>
-          <div className="mt-4 space-y-4">
+          <div className="mt-4 min-h-44 space-y-4">
             {warehouseActivityQuery.isLoading ? (
               <p className="text-sm text-default-500">{t("activityLoading")}</p>
             ) : (warehouseActivityQuery.data?.length ?? 0) === 0 ? (
@@ -305,7 +305,7 @@ export default function DashboardPage() {
           <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-[#02395b]">
             {t("auditActivityTitle")}
           </h3>
-          <div className="mt-4 space-y-4">
+          <div className="mt-4 min-h-44 space-y-4">
             {auditActivityQuery.isLoading ? (
               <p className="text-sm text-default-500">{t("activityLoading")}</p>
             ) : (auditActivityQuery.data?.length ?? 0) === 0 ? (

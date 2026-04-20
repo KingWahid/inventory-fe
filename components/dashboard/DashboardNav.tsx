@@ -43,7 +43,7 @@ export function DashboardNav({ onNavigate }: Props) {
         {dashActive ? <span className="ml-auto h-6 w-0.5 rounded-full bg-[#0a5a8c]" /> : null}
       </Link>
 
-      <div className="px-3 pt-3 text-xs font-semibold uppercase tracking-[0.16em] text-default-400">
+      <div className="px-3 pt-4 text-xs font-semibold uppercase tracking-[0.2em] text-default-400">
         {t("master")}
       </div>
       <Link
