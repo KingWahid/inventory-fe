@@ -42,6 +42,7 @@ export function WarehouseFormModal({
   const [form, setForm] = useState<FormState>(emptyState);
   const [error, setError] = useState<string | null>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- sync local form when modal opens / entity changes */
   useEffect(() => {
     if (!open) return;
     if (!warehouse || mode === "create") {
@@ -57,6 +58,7 @@ export function WarehouseFormModal({
     });
     setError(null);
   }, [open, mode, warehouse]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!open) return null;
 
@@ -105,7 +107,7 @@ export function WarehouseFormModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-xl rounded-lg border border-default-200 bg-background p-5 shadow-xl dark:border-default-100">
+      <div className="max-h-[min(90vh,40rem)] w-full max-w-xl overflow-y-auto rounded-lg border border-default-200 bg-background p-5 shadow-xl dark:border-default-100">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">
             Gudang — {mode === "create" ? "baru" : "edit"}

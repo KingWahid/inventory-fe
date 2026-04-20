@@ -1,6 +1,10 @@
 "use client";
 
-import { WarehouseFormModal } from "@/components/warehouses/WarehouseFormModal";
+import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
+import { InventorySearchField } from "@/components/ui/molecules/InventorySearchField";
+import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
+import { WarehouseFormModal } from "@/components/ui/organisms/warehouse/WarehouseFormModal";
+import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
 import {
   createWarehouse,
   deleteWarehouse,
@@ -14,7 +18,6 @@ import {
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { queryKeys } from "@/lib/query-keys";
 import {
-  Alert,
   Button,
   Dropdown,
   DropdownItem,
@@ -41,6 +44,16 @@ const SORT_FIELDS = [
   { value: "updated_at", label: "Diubah" },
   { value: "is_active", label: "Aktif" },
 ] as const;
+
+const SORT_FILTER_ITEMS = SORT_FIELDS.map((s) => ({
+  id: s.value,
+  label: s.label,
+}));
+
+const ORDER_FILTER_ITEMS = [
+  { id: "asc", label: "Naik" },
+  { id: "desc", label: "Turun" },
+];
 
 function parsePositiveInt(v: string | null, fallback: number): number {
   const n = Number(v);
@@ -164,7 +177,7 @@ export default function InventoryWarehousesPage() {
   const mutationBusy = createMut.isPending || updateMut.isPending;
 
   return (
-    <main className="flex min-h-full flex-1 flex-col gap-4 p-8">
+    <DashboardPageTemplate gap="gap-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Gudang</h1>
         <Button
@@ -178,15 +191,9 @@ export default function InventoryWarehousesPage() {
       </div>
 
       {mutationError ? (
-        <Alert status="danger">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>Operasi gagal</Alert.Title>
-            <Alert.Description>
-              {userFacingApiMessage(mutationError)}
-            </Alert.Description>
-          </Alert.Content>
-        </Alert>
+        <ApiErrorAlert title="Operasi gagal">
+          {userFacingApiMessage(mutationError)}
+        </ApiErrorAlert>
       ) : null}
 
       <form
@@ -196,44 +203,38 @@ export default function InventoryWarehousesPage() {
           setQueryParams({ page: 1, search: searchDraft.trim() || undefined });
         }}
       >
-        <div className="flex min-w-[200px] flex-1 flex-col gap-1">
-          <label className="text-xs font-medium text-default-600">Cari</label>
-          <input
-            className="w-full rounded-md border border-default-300 bg-background px-3 py-2 text-sm"
-            placeholder="Kode, nama, alamat…"
-            value={searchDraft}
-            onChange={(e) => setSearchDraft(e.target.value)}
-          />
-        </div>
+        <InventorySearchField
+          label="Cari"
+          className="min-w-[200px] flex-1"
+          fullWidth
+          placeholder="Kode, nama, alamat…"
+          value={searchDraft}
+          onChange={setSearchDraft}
+        />
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-default-600">Urut</label>
+          <span className="text-xs font-medium text-default-600">Urut</span>
           <div className="flex flex-wrap gap-1">
-            <select
-              className="rounded-md border border-default-300 bg-background px-2 py-2 text-sm"
+            <InventorySelect
+              className="min-w-[8.5rem]"
+              items={SORT_FILTER_ITEMS}
               value={sort}
-              onChange={(e) =>
-                setQueryParams({ page: 1, sort: e.target.value })
+              onChange={(id) =>
+                setQueryParams({ page: 1, sort: id })
               }
-            >
-              {SORT_FIELDS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-            <select
-              className="rounded-md border border-default-300 bg-background px-2 py-2 text-sm"
+              ariaLabel="Kolom urut"
+            />
+            <InventorySelect
+              className="min-w-[6rem]"
+              items={ORDER_FILTER_ITEMS}
               value={order}
-              onChange={(e) =>
+              onChange={(id) =>
                 setQueryParams({
                   page: 1,
-                  order: e.target.value === "desc" ? "desc" : "asc",
+                  order: id === "desc" ? "desc" : "asc",
                 })
               }
-            >
-              <option value="asc">Naik</option>
-              <option value="desc">Turun</option>
-            </select>
+              ariaLabel="Arah urut"
+            />
           </div>
         </div>
         <Button type="submit" variant="secondary" className="shrink-0">
@@ -391,6 +392,6 @@ export default function InventoryWarehousesPage() {
           </div>
         </div>
       ) : null}
-    </main>
+    </DashboardPageTemplate>
   );
 }

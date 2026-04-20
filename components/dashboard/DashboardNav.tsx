@@ -5,14 +5,18 @@ import { usePathname } from "next/navigation";
 
 function linkClass(active: boolean): string {
   return [
-    "block rounded-md px-3 py-2 text-sm transition-colors",
+    "block min-h-11 rounded-md px-3 py-2 text-sm transition-colors sm:min-h-0",
     active
       ? "bg-primary/15 font-medium text-primary"
       : "text-default-700 hover:bg-default-100 dark:text-default-300 dark:hover:bg-default-50/10",
   ].join(" ");
 }
 
-export function DashboardNav() {
+type Props = {
+  onNavigate?: () => void;
+};
+
+export function DashboardNav({ onNavigate }: Props) {
   const pathname = usePathname();
 
   const dashActive = pathname === "/dashboard";
@@ -26,7 +30,11 @@ export function DashboardNav() {
 
   return (
     <nav className="flex flex-col gap-1 p-3" aria-label="Navigasi utama">
-      <Link href="/dashboard" className={linkClass(dashActive)}>
+      <Link
+        href="/dashboard"
+        className={linkClass(dashActive)}
+        onClick={() => onNavigate?.()}
+      >
         Dash
       </Link>
 
@@ -36,26 +44,37 @@ export function DashboardNav() {
       <Link
         href="/inventory/categories"
         className={`${linkClass(catActive)} pl-6`}
+        onClick={() => onNavigate?.()}
       >
         Cat
       </Link>
       <Link
         href="/inventory/products"
         className={`${linkClass(prodActive)} pl-6`}
+        onClick={() => onNavigate?.()}
       >
         Prod
       </Link>
       <Link
         href="/inventory/warehouses"
         className={`${linkClass(whActive)} pl-6`}
+        onClick={() => onNavigate?.()}
       >
         Wh
       </Link>
 
-      <Link href="/inventory/movements" className={linkClass(movActive)}>
+      <Link
+        href="/inventory/movements"
+        className={linkClass(movActive)}
+        onClick={() => onNavigate?.()}
+      >
         Move
       </Link>
-      <Link href="/inventory/audit" className={linkClass(auditActive)}>
+      <Link
+        href="/inventory/audit"
+        className={linkClass(auditActive)}
+        onClick={() => onNavigate?.()}
+      >
         Audit
       </Link>
     </nav>

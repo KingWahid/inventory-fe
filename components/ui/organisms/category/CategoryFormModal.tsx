@@ -5,6 +5,7 @@ import type {
   CategoryCreateBody,
   CategoryUpdateBody,
 } from "@/lib/api/categories";
+import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
 import { Button, Input, Label, TextField } from "@heroui/react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
@@ -44,6 +45,7 @@ export function CategoryFormModal({
   const [form, setForm] = useState<FormState>(emptyState);
   const [error, setError] = useState<string | null>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- sync local form when modal opens / entity changes */
   useEffect(() => {
     if (!open) return;
     if (!category || mode === "create") {
@@ -60,10 +62,19 @@ export function CategoryFormModal({
     });
     setError(null);
   }, [open, mode, category]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const parentOptions = useMemo(
     () => categories.filter((c) => c.id !== category?.id),
     [categories, category?.id],
+  );
+
+  const parentItems = useMemo(
+    () => [
+      { id: "", label: "(Tidak ada)" },
+      ...parentOptions.map((item) => ({ id: item.id, label: item.name })),
+    ],
+    [parentOptions],
   );
 
   if (!open) return null;
@@ -98,7 +109,7 @@ export function CategoryFormModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-xl rounded-lg border border-default-200 bg-background p-5 shadow-xl dark:border-default-100">
+      <div className="max-h-[min(90vh,40rem)] w-full max-w-xl overflow-y-auto rounded-lg border border-default-200 bg-background p-5 shadow-xl dark:border-default-100">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">
             {mode === "create" ? "Tambah kategori" : "Edit kategori"}
@@ -135,24 +146,16 @@ export function CategoryFormModal({
             />
           </TextField>
 
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-default-700">Parent</span>
-            <select
-              className="rounded-md border border-default-300 bg-background px-3 py-2"
-              value={form.parent_id}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, parent_id: e.target.value }))
-              }
-              disabled={busy}
-            >
-              <option value="">(Tidak ada)</option>
-              {parentOptions.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <InventorySelect
+            label="Parent"
+            fullWidth
+            items={parentItems}
+            value={form.parent_id}
+            onChange={(id) =>
+              setForm((s) => ({ ...s, parent_id: id }))
+            }
+            isDisabled={busy}
+          />
 
           <TextField fullWidth name="sort_order" type="number">
             <Label>Sort order</Label>

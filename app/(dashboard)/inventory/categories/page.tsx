@@ -1,6 +1,9 @@
 "use client";
 
-import { CategoryFormModal } from "@/components/categories/CategoryFormModal";
+import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
+import { InventorySearchField } from "@/components/ui/molecules/InventorySearchField";
+import { CategoryFormModal } from "@/components/ui/organisms/category/CategoryFormModal";
+import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
 import {
   createCategory,
   deleteCategory,
@@ -14,7 +17,6 @@ import {
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { queryKeys } from "@/lib/query-keys";
 import {
-  Alert,
   Button,
   Dropdown,
   DropdownItem,
@@ -132,7 +134,7 @@ export default function InventoryCategoriesPage() {
   const mutationBusy = createMut.isPending || updateMut.isPending;
 
   return (
-    <main className="flex min-h-full flex-1 flex-col gap-4 p-8">
+    <DashboardPageTemplate gap="gap-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Kategori</h1>
         <Button
@@ -146,27 +148,25 @@ export default function InventoryCategoriesPage() {
       </div>
 
       {mutationError ? (
-        <Alert status="danger">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>Operasi gagal</Alert.Title>
-            <Alert.Description>{userFacingApiMessage(mutationError)}</Alert.Description>
-          </Alert.Content>
-        </Alert>
+        <ApiErrorAlert title="Operasi gagal">
+          {userFacingApiMessage(mutationError)}
+        </ApiErrorAlert>
       ) : null}
 
       <form
-        className="flex items-center gap-2"
+        className="flex flex-wrap items-end gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           setQueryParams({ page: 1, search: searchDraft.trim() || undefined });
         }}
       >
-        <input
-          className="w-full max-w-md rounded-md border border-default-300 bg-background px-3 py-2 text-sm"
+        <InventorySearchField
+          className="max-w-md flex-1"
+          fullWidth
           placeholder="Search"
           value={searchDraft}
-          onChange={(e) => setSearchDraft(e.target.value)}
+          onChange={setSearchDraft}
+          aria-label="Cari kategori"
         />
         <Button type="submit" variant="secondary">
           Cari
@@ -310,6 +310,6 @@ export default function InventoryCategoriesPage() {
           </div>
         </div>
       ) : null}
-    </main>
+    </DashboardPageTemplate>
   );
 }

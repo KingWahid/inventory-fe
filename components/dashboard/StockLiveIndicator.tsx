@@ -13,6 +13,7 @@ export function StockLiveIndicator() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<ConnStatus>("off");
 
+  /* eslint-disable react-hooks/set-state-in-effect -- EventSource lifecycle + token presence */
   useEffect(() => {
     if (!accessToken?.trim()) {
       setStatus("off");
@@ -38,6 +39,7 @@ export function StockLiveIndicator() {
       es.close();
     };
   }, [accessToken, queryClient]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const dotClass =
     status === "live"

@@ -1,5 +1,6 @@
 "use client";
 
+import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
 import type { Category } from "@/lib/api/categories";
 import type {
   Product,
@@ -8,7 +9,7 @@ import type {
 } from "@/lib/api/products";
 import { formatIdr } from "@/lib/format/currency";
 import { Button, Input, Label, TextField } from "@heroui/react";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type Props = {
   open: boolean;
@@ -52,6 +53,7 @@ export function ProductFormModal({
   const [form, setForm] = useState<FormState>(emptyState);
   const [error, setError] = useState<string | null>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- sync local form when modal opens / entity changes */
   useEffect(() => {
     if (!open) return;
     if (!product || mode === "create") {
@@ -76,6 +78,15 @@ export function ProductFormModal({
     });
     setError(null);
   }, [open, mode, product]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const categoryItems = useMemo(
+    () => [
+      { id: "", label: "(Tanpa kategori)" },
+      ...categories.map((c) => ({ id: c.id, label: c.name })),
+    ],
+    [categories],
+  );
 
   if (!open) return null;
 
@@ -172,7 +183,7 @@ export function ProductFormModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-xl rounded-lg border border-default-200 bg-background p-5 shadow-xl dark:border-default-100">
+      <div className="max-h-[min(90vh,40rem)] w-full max-w-xl overflow-y-auto rounded-lg border border-default-200 bg-background p-5 shadow-xl dark:border-default-100">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">
             Produk — {mode === "create" ? "baru" : "edit"}
@@ -207,24 +218,16 @@ export function ProductFormModal({
             />
           </TextField>
 
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-default-700">Kategori</span>
-            <select
-              className="rounded-md border border-default-300 bg-background px-3 py-2"
-              value={form.category_id}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, category_id: e.target.value }))
-              }
-              disabled={busy}
-            >
-              <option value="">(Tanpa kategori)</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <InventorySelect
+            label="Kategori"
+            fullWidth
+            items={categoryItems}
+            value={form.category_id}
+            onChange={(id) =>
+              setForm((s) => ({ ...s, category_id: id }))
+            }
+            isDisabled={busy}
+          />
 
           <TextField fullWidth name="price" inputMode="decimal">
             <Label>Harga (IDR)</Label>

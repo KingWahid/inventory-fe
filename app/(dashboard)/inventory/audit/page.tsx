@@ -5,9 +5,12 @@ import {
   type AuditLog,
   type AuditLogListParams,
 } from "@/lib/api/audit";
+import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
+import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
+import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { queryKeys } from "@/lib/query-keys";
-import { Alert, Button } from "@heroui/react";
+import { Button } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -21,6 +24,11 @@ const ENTITY_OPTIONS = [
   { value: "warehouse", label: "warehouse" },
   { value: "movement", label: "movement" },
 ] as const;
+
+const ENTITY_FILTER_ITEMS = ENTITY_OPTIONS.map((o) => ({
+  id: o.value,
+  label: o.label,
+}));
 
 function parsePositiveInt(v: string | null, fallback: number): number {
   const n = Number(v);
@@ -93,6 +101,7 @@ export default function InventoryAuditPage() {
     Boolean(entity_id || user_id || created_from || created_to),
   );
 
+  /* eslint-disable react-hooks/set-state-in-effect -- keep filter drafts in sync with URL */
   useEffect(() => {
     setActionDraft(action);
     setEntityIdDraft(entity_id);
@@ -102,6 +111,7 @@ export default function InventoryAuditPage() {
     );
     setCreatedToDraft(created_to ? isoToDatetimeLocal(created_to) : "");
   }, [action, entity_id, user_id, created_from, created_to]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const listParams: AuditLogListParams = useMemo(() => {
     const p: AuditLogListParams = {
@@ -190,7 +200,7 @@ export default function InventoryAuditPage() {
   const err = listQuery.error;
 
   return (
-    <main className="flex min-h-full flex-1 flex-col gap-4 p-8">
+    <DashboardPageTemplate gap="gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Audit log</h1>
       </div>
@@ -203,28 +213,18 @@ export default function InventoryAuditPage() {
         }}
       >
         <div className="flex flex-wrap items-end gap-3">
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-default-600">
-              Entity
-            </label>
-            <select
-              className="min-w-[160px] rounded-md border border-default-300 bg-background px-3 py-2 text-sm"
-              value={entity}
-              onChange={(e) => {
-                const v = e.target.value.trim();
-                setQueryParams({
-                  page: 1,
-                  entity: v || undefined,
-                });
-              }}
-            >
-              {ENTITY_OPTIONS.map((o) => (
-                <option key={o.label + o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <InventorySelect
+            label="Entity"
+            className="min-w-[160px]"
+            items={ENTITY_FILTER_ITEMS}
+            value={entity}
+            onChange={(v) =>
+              setQueryParams({
+                page: 1,
+                entity: v.trim() || undefined,
+              })
+            }
+          />
           <div className="flex min-w-[140px] flex-col gap-1">
             <label className="text-xs font-medium text-default-600">Aksi</label>
             <input
@@ -297,15 +297,9 @@ export default function InventoryAuditPage() {
       </form>
 
       {err ? (
-        <Alert status="danger">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>Gagal memuat audit log</Alert.Title>
-            <Alert.Description>
-              {userFacingApiMessage(err)}
-            </Alert.Description>
-          </Alert.Content>
-        </Alert>
+        <ApiErrorAlert title="Gagal memuat audit log">
+          {userFacingApiMessage(err)}
+        </ApiErrorAlert>
       ) : null}
 
       <div className="overflow-x-auto rounded-lg border border-default-200">
@@ -378,6 +372,6 @@ export default function InventoryAuditPage() {
           {"Next >"}
         </Button>
       </div>
-    </main>
+    </DashboardPageTemplate>
   );
 }

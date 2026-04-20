@@ -12,10 +12,13 @@ import {
 import { listProducts } from "@/lib/api/products";
 import { listWarehouses } from "@/lib/api/warehouses";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
+import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
+import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
+import { PageHeader } from "@/components/ui/molecules/PageHeader";
+import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
 import { queryKeys } from "@/lib/query-keys";
-import { Alert, Button } from "@heroui/react";
+import { Button, Input, Label, TextField } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -81,6 +84,28 @@ export default function NewMovementPage() {
   const activeWarehouses = useMemo(
     () => warehouses.filter((w) => w.is_active !== false),
     [warehouses],
+  );
+
+  const warehouseSelectItems = useMemo(
+    () => [
+      { id: "", label: "— pilih —" },
+      ...activeWarehouses.map((w) => ({
+        id: w.id,
+        label: `${w.code} · ${w.name}`,
+      })),
+    ],
+    [activeWarehouses],
+  );
+
+  const productSelectItems = useMemo(
+    () => [
+      { id: "", label: "— produk —" },
+      ...products.map((p) => ({
+        id: p.id,
+        label: `${p.sku} · ${p.name}`,
+      })),
+    ],
+    [products],
   );
 
   const createMut = useMutation({
@@ -207,30 +232,13 @@ export default function NewMovementPage() {
   }
 
   return (
-    <main className="flex min-h-full flex-1 flex-col gap-6 p-8">
-      <div className="flex flex-wrap items-center gap-3">
-        <Link
-          href="/inventory/movements"
-          className="text-sm font-medium text-primary underline-offset-2 hover:underline"
-        >
-          ← Kembali ke daftar
-        </Link>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Buat movement</h1>
-      </div>
+    <DashboardPageTemplate>
+      <PageHeader backHref="/inventory/movements" title="Buat movement" />
 
       {createMut.error ? (
-        <Alert status="danger">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>Gagal menyimpan draft</Alert.Title>
-            <Alert.Description>
-              {userFacingApiMessage(createMut.error)}
-            </Alert.Description>
-          </Alert.Content>
-        </Alert>
+        <ApiErrorAlert title="Gagal menyimpan draft">
+          {userFacingApiMessage(createMut.error)}
+        </ApiErrorAlert>
       ) : null}
 
       <section className="flex flex-col gap-4 rounded-lg border border-default-200 p-4 dark:border-default-100">
@@ -242,7 +250,7 @@ export default function NewMovementPage() {
             <button
               key={t.value}
               type="button"
-              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`min-h-11 rounded-md px-3 py-1.5 text-sm font-medium transition-colors sm:min-h-0 ${
                 movementType === t.value
                   ? "bg-primary text-primary-foreground"
                   : "border border-default-300 bg-background hover:bg-default-100 dark:border-default-100"
@@ -254,101 +262,75 @@ export default function NewMovementPage() {
           ))}
         </div>
 
-        <label className="flex max-w-xl flex-col gap-1 text-sm">
-          <span className="font-medium text-default-700">Nomor referensi</span>
-          <input
-            className="rounded-md border border-default-300 bg-background px-3 py-2"
+        <TextField fullWidth className="max-w-xl" name="reference_number">
+          <Label>Nomor referensi</Label>
+          <Input
             value={referenceNumber}
             onChange={(e) => setReferenceNumber(e.target.value)}
             placeholder="MOV-..."
             autoComplete="off"
           />
-        </label>
+        </TextField>
 
-        <label className="flex max-w-xl flex-col gap-1 text-sm">
-          <span className="font-medium text-default-700">Catatan movement</span>
-          <input
-            className="rounded-md border border-default-300 bg-background px-3 py-2"
+        <TextField fullWidth className="max-w-xl" name="movement_notes">
+          <Label>Catatan movement</Label>
+          <Input
             value={movementNotes}
             onChange={(e) => setMovementNotes(e.target.value)}
           />
-        </label>
+        </TextField>
 
         {movementType === "inbound" ? (
-          <label className="flex max-w-xl flex-col gap-1 text-sm">
-            <span className="font-medium text-default-700">Gudang tujuan</span>
-            <select
-              className="rounded-md border border-default-300 bg-background px-3 py-2"
-              value={destinationId}
-              onChange={(e) => setDestinationId(e.target.value)}
-            >
-              <option value="">— pilih —</option>
-              {activeWarehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.code} · {w.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <InventorySelect
+            label="Gudang tujuan"
+            fullWidth
+            className="max-w-xl"
+            placeholder="— pilih —"
+            items={warehouseSelectItems}
+            value={destinationId}
+            onChange={setDestinationId}
+          />
         ) : null}
 
         {movementType === "outbound" ? (
-          <label className="flex max-w-xl flex-col gap-1 text-sm">
-            <span className="font-medium text-default-700">Gudang asal</span>
-            <select
-              className="rounded-md border border-default-300 bg-background px-3 py-2"
-              value={sourceId}
-              onChange={(e) => setSourceId(e.target.value)}
-            >
-              <option value="">— pilih —</option>
-              {activeWarehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.code} · {w.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <InventorySelect
+            label="Gudang asal"
+            fullWidth
+            className="max-w-xl"
+            placeholder="— pilih —"
+            items={warehouseSelectItems}
+            value={sourceId}
+            onChange={setSourceId}
+          />
         ) : null}
 
         {movementType === "transfer" ? (
           <div className="flex flex-wrap gap-4">
-            <label className="flex min-w-[200px] flex-1 flex-col gap-1 text-sm">
-              <span className="font-medium text-default-700">Gudang asal</span>
-              <select
-                className="rounded-md border border-default-300 bg-background px-3 py-2"
-                value={sourceId}
-                onChange={(e) => setSourceId(e.target.value)}
-              >
-                <option value="">— pilih —</option>
-                {activeWarehouses.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.code} · {w.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex min-w-[200px] flex-1 flex-col gap-1 text-sm">
-              <span className="font-medium text-default-700">Gudang tujuan</span>
-              <select
-                className="rounded-md border border-default-300 bg-background px-3 py-2"
-                value={destinationId}
-                onChange={(e) => setDestinationId(e.target.value)}
-              >
-                <option value="">— pilih —</option>
-                {activeWarehouses.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.code} · {w.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <InventorySelect
+              label="Gudang asal"
+              fullWidth
+              className="min-w-[200px] flex-1 max-w-none"
+              placeholder="— pilih —"
+              items={warehouseSelectItems}
+              value={sourceId}
+              onChange={setSourceId}
+            />
+            <InventorySelect
+              label="Gudang tujuan"
+              fullWidth
+              className="min-w-[200px] flex-1 max-w-none"
+              placeholder="— pilih —"
+              items={warehouseSelectItems}
+              value={destinationId}
+              onChange={setDestinationId}
+            />
           </div>
         ) : null}
 
         {movementType === "adjustment" ? (
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap gap-4 text-sm">
-              <label className="flex cursor-pointer items-center gap-2">
+              <label className="flex min-h-11 cursor-pointer items-center gap-2 sm:min-h-0">
                 <input
                   type="radio"
                   name="adjSide"
@@ -357,7 +339,7 @@ export default function NewMovementPage() {
                 />
                 Tambah stok (gudang tujuan)
               </label>
-              <label className="flex cursor-pointer items-center gap-2">
+              <label className="flex min-h-11 cursor-pointer items-center gap-2 sm:min-h-0">
                 <input
                   type="radio"
                   name="adjSide"
@@ -367,21 +349,15 @@ export default function NewMovementPage() {
                 Kurangi stok (gudang asal)
               </label>
             </div>
-            <label className="flex max-w-xl flex-col gap-1 text-sm">
-              <span className="font-medium text-default-700">Gudang</span>
-              <select
-                className="rounded-md border border-default-300 bg-background px-3 py-2"
-                value={adjustWarehouseId}
-                onChange={(e) => setAdjustWarehouseId(e.target.value)}
-              >
-                <option value="">— pilih —</option>
-                {activeWarehouses.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.code} · {w.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <InventorySelect
+              label="Gudang"
+              fullWidth
+              className="max-w-xl"
+              placeholder="— pilih —"
+              items={warehouseSelectItems}
+              value={adjustWarehouseId}
+              onChange={setAdjustWarehouseId}
+            />
           </div>
         ) : null}
       </section>
@@ -408,27 +384,25 @@ export default function NewMovementPage() {
               {lines.map((line, index) => (
                 <tr key={index} className="border-t border-default-200">
                   <td className="px-3 py-2">
-                    <select
-                      className="w-full max-w-xs rounded-md border border-default-300 bg-background px-2 py-1.5"
+                    <InventorySelect
+                      ariaLabel={`Produk baris ${index + 1}`}
+                      className="w-full max-w-xs"
+                      variant="secondary"
+                      placeholder="— produk —"
+                      items={productSelectItems}
                       value={line.product_id}
-                      onChange={(e) =>
-                        updateLine(index, { product_id: e.target.value })
+                      onChange={(id) =>
+                        updateLine(index, { product_id: id })
                       }
-                    >
-                      <option value="">— produk —</option>
-                      {products.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.sku} · {p.name}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </td>
                   <td className="px-3 py-2">
-                    <input
+                    <Input
+                      aria-label={`Qty baris ${index + 1}`}
                       type="number"
                       min={1}
                       step={1}
-                      className="w-full rounded-md border border-default-300 bg-background px-2 py-1.5 tabular-nums"
+                      className="w-full tabular-nums"
                       value={line.quantity}
                       onChange={(e) =>
                         updateLine(index, { quantity: e.target.value })
@@ -436,8 +410,9 @@ export default function NewMovementPage() {
                     />
                   </td>
                   <td className="px-3 py-2">
-                    <input
-                      className="w-full rounded-md border border-default-300 bg-background px-2 py-1.5"
+                    <Input
+                      aria-label={`Catatan baris ${index + 1}`}
+                      className="w-full"
                       value={line.notes}
                       onChange={(e) =>
                         updateLine(index, { notes: e.target.value })
@@ -476,6 +451,6 @@ export default function NewMovementPage() {
           (UUID baru).
         </p>
       </div>
-    </main>
+    </DashboardPageTemplate>
   );
 }

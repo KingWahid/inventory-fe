@@ -1,9 +1,10 @@
 "use client";
 
+import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
 import { login, register } from "@/lib/api/auth";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { useAuthStore } from "@/stores/auth";
-import { Alert, Button, Input, Label, Spinner, TextField } from "@heroui/react";
+import { Button, Input, Label, Spinner, TextField } from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
@@ -70,13 +71,7 @@ export default function RegisterPage() {
 
       <form className="flex flex-col gap-6" onSubmit={onSubmit} noValidate>
         {errorMessage ? (
-          <Alert status="danger">
-            <Alert.Indicator />
-            <Alert.Content>
-              <Alert.Title>Terjadi kesalahan</Alert.Title>
-              <Alert.Description>{errorMessage}</Alert.Description>
-            </Alert.Content>
-          </Alert>
+          <ApiErrorAlert title="Terjadi kesalahan">{errorMessage}</ApiErrorAlert>
         ) : null}
 
         <TextField fullWidth name="tenant_name" autoComplete="organization">

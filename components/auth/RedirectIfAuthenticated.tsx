@@ -11,10 +11,12 @@ export function RedirectIfAuthenticated() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const [hydrated, setHydrated] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- zustand persist hydration gate */
   useEffect(() => {
     setHydrated(useAuthStore.persist.hasHydrated());
     return useAuthStore.persist.onFinishHydration(() => setHydrated(true));
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!hydrated || !accessToken) return;

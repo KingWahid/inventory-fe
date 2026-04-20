@@ -1,6 +1,10 @@
 "use client";
 
 import { StockLiveIndicator } from "@/components/dashboard/StockLiveIndicator";
+import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
+import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
+import { SummaryStatCard } from "@/components/ui/organisms/SummaryStatCard";
+import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
 import {
   getDashboardMovementsChart,
   getDashboardSummary,
@@ -8,7 +12,6 @@ import {
 } from "@/lib/api/dashboard";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { queryKeys } from "@/lib/query-keys";
-import { Alert } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
@@ -40,36 +43,6 @@ function shortBucketLabel(isoDate: string, period: DashboardChartPeriod): string
   }
 }
 
-function SummaryCard({
-  title,
-  subtitle,
-  value,
-  loading,
-}: {
-  title: string;
-  subtitle?: string;
-  value: string;
-  loading: boolean;
-}) {
-  return (
-    <div className="rounded-lg border border-default-200 bg-background p-4 shadow-sm dark:border-default-100">
-      <div className="text-xs font-medium uppercase tracking-wide text-default-500">
-        {title}
-      </div>
-      {subtitle ? (
-        <div className="mt-0.5 text-xs text-default-500">{subtitle}</div>
-      ) : null}
-      <div className="mt-2 text-2xl font-semibold tabular-nums">
-        {loading ? (
-          <span className="inline-block h-8 w-16 animate-pulse rounded bg-default-200 dark:bg-default-800" />
-        ) : (
-          value
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function DashboardPage() {
   const [period, setPeriod] = useState<DashboardChartPeriod>("daily");
 
@@ -98,7 +71,7 @@ export default function DashboardPage() {
   const chartLoading = chartQuery.isLoading;
 
   return (
-    <main className="flex min-h-full flex-1 flex-col gap-6 p-8">
+    <DashboardPageTemplate>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Ringkasan</h1>
@@ -110,39 +83,33 @@ export default function DashboardPage() {
       </div>
 
       {chartError ? (
-        <Alert status="danger">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>Gagal memuat dashboard</Alert.Title>
-            <Alert.Description>
-              {userFacingApiMessage(chartError)}
-            </Alert.Description>
-          </Alert.Content>
-        </Alert>
+        <ApiErrorAlert title="Gagal memuat dashboard">
+          {userFacingApiMessage(chartError)}
+        </ApiErrorAlert>
       ) : null}
 
       <section>
         <h2 className="sr-only">Kartu ringkasan</h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <SummaryCard
+          <SummaryStatCard
             title="Produk"
             subtitle="Non-deleted di tenant"
             value={summary ? formatNum(summary.total_products) : "—"}
             loading={summaryQuery.isLoading}
           />
-          <SummaryCard
+          <SummaryStatCard
             title="Movement"
             subtitle="Terkonfirmasi hari ini (UTC)"
             value={summary ? formatNum(summary.movements_today) : "—"}
             loading={summaryQuery.isLoading}
           />
-          <SummaryCard
+          <SummaryStatCard
             title="Low stock"
             subtitle="Di bawah reorder level"
             value={summary ? formatNum(summary.low_stock_count) : "—"}
             loading={summaryQuery.isLoading}
           />
-          <SummaryCard
+          <SummaryStatCard
             title="Gudang aktif"
             subtitle="Mengganti slot Alerts sampai notifikasi"
             value={summary ? formatNum(summary.total_warehouses) : "—"}
@@ -152,24 +119,19 @@ export default function DashboardPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
           <h2 className="text-lg font-semibold">Movement terkonfirmasi</h2>
-          <label className="flex items-center gap-2 text-sm">
-            <span className="text-default-600">Periode</span>
-            <select
-              className="rounded-md border border-default-300 bg-background px-2 py-1.5 text-sm"
-              value={period}
-              onChange={(e) =>
-                setPeriod(e.target.value as DashboardChartPeriod)
-              }
-            >
-              {PERIOD_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <InventorySelect
+            label="Periode"
+            className="w-full min-w-[12rem] sm:w-auto"
+            placeholder="Periode chart"
+            items={PERIOD_OPTIONS.map((o) => ({
+              id: o.value,
+              label: o.label,
+            }))}
+            value={period}
+            onChange={(id) => setPeriod(id as DashboardChartPeriod)}
+          />
         </div>
 
         <div className="rounded-lg border border-default-200 bg-background p-4 dark:border-default-100">
@@ -219,6 +181,6 @@ export default function DashboardPage() {
           )}
         </div>
       </section>
-    </main>
+    </DashboardPageTemplate>
   );
 }

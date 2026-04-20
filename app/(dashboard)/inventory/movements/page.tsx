@@ -8,6 +8,9 @@ import {
   type MovementStatus,
   type MovementType,
 } from "@/lib/api/movements";
+import { InventorySearchField } from "@/components/ui/molecules/InventorySearchField";
+import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
+import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
 import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
@@ -39,6 +42,26 @@ const SORT_FIELDS = [
   { value: "status", label: "Status" },
   { value: "type", label: "Tipe" },
 ] as const;
+
+const TYPE_FILTER_ITEMS = TYPE_OPTIONS.map((o) => ({
+  id: o.value,
+  label: o.label,
+}));
+
+const STATUS_FILTER_ITEMS = STATUS_OPTIONS.map((o) => ({
+  id: o.value,
+  label: o.label,
+}));
+
+const SORT_FILTER_ITEMS = SORT_FIELDS.map((s) => ({
+  id: s.value,
+  label: s.label,
+}));
+
+const ORDER_FILTER_ITEMS = [
+  { id: "desc", label: "Turun" },
+  { id: "asc", label: "Naik" },
+];
 
 function parsePositiveInt(v: string | null, fallback: number): number {
   const n = Number(v);
@@ -199,7 +222,7 @@ export default function InventoryMovementsPage() {
   }
 
   return (
-    <main className="flex min-h-full flex-1 flex-col gap-4 p-8">
+    <DashboardPageTemplate gap="gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Movements</h1>
         <Button
@@ -220,88 +243,66 @@ export default function InventoryMovementsPage() {
           });
         }}
       >
+        <InventorySelect
+          label="Jenis"
+          className="min-w-[140px]"
+          items={TYPE_FILTER_ITEMS}
+          value={typeParam}
+          onChange={(v) =>
+            setQueryParams({
+              page: 1,
+              ...(v === ""
+                ? { type: undefined }
+                : { type: v as MovementType }),
+            })
+          }
+        />
+        <InventorySelect
+          label="Status"
+          className="min-w-[140px]"
+          items={STATUS_FILTER_ITEMS}
+          value={statusParam}
+          onChange={(v) =>
+            setQueryParams({
+              page: 1,
+              ...(v === ""
+                ? { status: undefined }
+                : { status: v as MovementStatus }),
+            })
+          }
+        />
+        <InventorySearchField
+          label="Search"
+          className="min-w-[200px] flex-1"
+          fullWidth
+          placeholder="Nomor referensi…"
+          value={searchDraft}
+          onChange={setSearchDraft}
+        />
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-default-600">Jenis</label>
-          <select
-            className="min-w-[140px] rounded-md border border-default-300 bg-background px-3 py-2 text-sm"
-            value={typeParam}
-            onChange={(e) => {
-              const v = e.target.value;
-              setQueryParams({
-                page: 1,
-                ...(v === ""
-                  ? { type: undefined }
-                  : { type: v as MovementType }),
-              });
-            }}
-          >
-            {TYPE_OPTIONS.map((o) => (
-              <option key={o.label + o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-default-600">Status</label>
-          <select
-            className="min-w-[140px] rounded-md border border-default-300 bg-background px-3 py-2 text-sm"
-            value={statusParam}
-            onChange={(e) => {
-              const v = e.target.value;
-              setQueryParams({
-                page: 1,
-                ...(v === ""
-                  ? { status: undefined }
-                  : { status: v as MovementStatus }),
-              });
-            }}
-          >
-            {STATUS_OPTIONS.map((o) => (
-              <option key={o.label + o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex min-w-[200px] flex-1 flex-col gap-1">
-          <label className="text-xs font-medium text-default-600">Search</label>
-          <input
-            className="w-full rounded-md border border-default-300 bg-background px-3 py-2 text-sm"
-            placeholder="Nomor referensi…"
-            value={searchDraft}
-            onChange={(e) => setSearchDraft(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-default-600">Urut</label>
+          <span className="text-xs font-medium text-default-600">Urut</span>
           <div className="flex flex-wrap gap-1">
-            <select
-              className="rounded-md border border-default-300 bg-background px-2 py-2 text-sm"
+            <InventorySelect
+              className="min-w-[8rem]"
+              items={SORT_FILTER_ITEMS}
               value={sort}
-              onChange={(e) =>
-                setQueryParams({ page: 1, sort: e.target.value })
+              onChange={(id) =>
+                setQueryParams({ page: 1, sort: id })
               }
-            >
-              {SORT_FIELDS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-            <select
-              className="rounded-md border border-default-300 bg-background px-2 py-2 text-sm"
+              ariaLabel="Kolom urut"
+            />
+            <InventorySelect
+              className="min-w-[6rem]"
+              items={ORDER_FILTER_ITEMS}
               value={order}
-              onChange={(e) =>
+              onChange={(id) =>
                 setQueryParams({
                   page: 1,
-                  order: e.target.value === "asc" ? "asc" : "desc",
+                  order: id === "asc" ? "asc" : "desc",
                 })
               }
-            >
-              <option value="desc">Turun</option>
-              <option value="asc">Naik</option>
-            </select>
+              ariaLabel="Arah urut"
+            />
           </div>
         </div>
         <Button type="submit" variant="secondary" className="shrink-0">
@@ -380,6 +381,6 @@ export default function InventoryMovementsPage() {
           {"Next >"}
         </Button>
       </div>
-    </main>
+    </DashboardPageTemplate>
   );
 }

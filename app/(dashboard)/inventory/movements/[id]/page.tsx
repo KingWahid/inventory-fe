@@ -8,9 +8,11 @@ import {
 } from "@/lib/api/movements";
 import { listProducts } from "@/lib/api/products";
 import { listWarehouses } from "@/lib/api/warehouses";
+import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
+import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { queryKeys } from "@/lib/query-keys";
-import { Alert, Button } from "@heroui/react";
+import { Button } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo } from "react";
@@ -95,9 +97,9 @@ export default function MovementDetailPage() {
 
   if (!id) {
     return (
-      <main className="flex min-h-full flex-1 flex-col p-8">
+      <DashboardPageTemplate gap="gap-4">
         <p className="text-default-600">Movement tidak valid.</p>
-      </main>
+      </DashboardPageTemplate>
     );
   }
 
@@ -152,11 +154,12 @@ export default function MovementDetailPage() {
   }
 
   return (
-    <main className="flex min-h-full flex-1 flex-col gap-4 p-8">
+    <DashboardPageTemplate gap="gap-4">
       <div className="flex flex-wrap items-start gap-3">
         <Button
           variant="secondary"
           size="sm"
+          className="min-h-11 sm:min-h-0"
           onPress={() => router.push("/inventory/movements")}
         >
           ← Kembali
@@ -166,15 +169,9 @@ export default function MovementDetailPage() {
       {movementQuery.isLoading ? (
         <p className="text-default-600">Memuat movement…</p>
       ) : movementQuery.isError ? (
-        <Alert status="danger">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>Gagal memuat</Alert.Title>
-            <Alert.Description>
-              {userFacingApiMessage(movementQuery.error)}
-            </Alert.Description>
-          </Alert.Content>
-        </Alert>
+        <ApiErrorAlert title="Gagal memuat">
+          {userFacingApiMessage(movementQuery.error)}
+        </ApiErrorAlert>
       ) : movement ? (
         <>
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-default-200 pb-4 dark:border-default-100">
@@ -223,15 +220,9 @@ export default function MovementDetailPage() {
           </p>
 
           {mutationError ? (
-            <Alert status="danger">
-              <Alert.Indicator />
-              <Alert.Content>
-                <Alert.Title>Operasi gagal</Alert.Title>
-                <Alert.Description>
-                  {userFacingApiMessage(mutationError)}
-                </Alert.Description>
-              </Alert.Content>
-            </Alert>
+            <ApiErrorAlert title="Operasi gagal">
+              {userFacingApiMessage(mutationError)}
+            </ApiErrorAlert>
           ) : null}
 
           <div>
@@ -272,6 +263,6 @@ export default function MovementDetailPage() {
           </div>
         </>
       ) : null}
-    </main>
+    </DashboardPageTemplate>
   );
 }
