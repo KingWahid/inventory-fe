@@ -53,5 +53,19 @@ export const queryKeys = {
       detail: (id: string) =>
         [...inventoryRoot, "warehouses", "detail", id] as const,
     },
+    movements: {
+      all: () => [...inventoryRoot, "movements"] as const,
+      list: (params: {
+        page?: number;
+        per_page?: number;
+        search?: string;
+        type?: string;
+        status?: string;
+        sort?: string;
+        order?: "asc" | "desc";
+      }) => [...inventoryRoot, "movements", "list", params] as const,
+      detail: (id: string) =>
+        [...inventoryRoot, "movements", "detail", id] as const,
+    },
   },
 } as const;
