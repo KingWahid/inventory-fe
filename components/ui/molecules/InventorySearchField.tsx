@@ -1,7 +1,9 @@
 "use client";
 
-import { cn } from "@/lib/cn";
-import { Label, SearchField } from "@heroui/react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { Search, X } from "lucide-react";
 import type { KeyboardEvent } from "react";
 
 type Props = {
@@ -13,7 +15,7 @@ type Props = {
   fullWidth?: boolean;
   isDisabled?: boolean;
   "aria-label"?: string;
-  onKeyDown?: (e: KeyboardEvent<Element>) => void;
+  onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
 };
 
 export function InventorySearchField({
@@ -30,23 +32,31 @@ export function InventorySearchField({
   return (
     <div className={cn("flex flex-col gap-1", fullWidth && "w-full", className)}>
       {label ? (
-        <Label className="text-xs font-medium text-default-600">{label}</Label>
+        <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
       ) : null}
-      <SearchField
-        aria-label={ariaLabel ?? label ?? "Cari"}
-        className={cn(fullWidth && "w-full")}
-        fullWidth={fullWidth}
-        variant="secondary"
+      <div className={cn("relative", fullWidth && "w-full")}>
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          aria-label={ariaLabel ?? label ?? "Cari"}
+          className="h-11 pr-10 pl-9 sm:h-10"
+          placeholder={placeholder}
         value={value}
-        onChange={onChange}
-        isDisabled={isDisabled}
-      >
-        <SearchField.Group className="min-h-11 sm:min-h-10">
-          <SearchField.SearchIcon />
-          <SearchField.Input placeholder={placeholder} onKeyDown={onKeyDown} />
-          <SearchField.ClearButton />
-        </SearchField.Group>
-      </SearchField>
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={onKeyDown}
+          disabled={isDisabled}
+        />
+        {value ? (
+          <button
+            type="button"
+            aria-label="Clear search"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            onClick={() => onChange("")}
+            disabled={isDisabled}
+          >
+            <X className="size-4" />
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

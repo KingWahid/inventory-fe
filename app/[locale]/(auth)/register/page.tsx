@@ -1,12 +1,15 @@
 "use client";
 
 import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Link, useRouter } from "@/i18n/navigation";
 import { login, register } from "@/lib/api/auth";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { useAuthStore } from "@/stores/auth";
-import { Button, Input, Label, Spinner, TextField } from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { FormEvent, useState } from "react";
 
@@ -97,76 +100,84 @@ export default function RegisterPage() {
                 <ApiErrorAlert title={t("failTitle")}>{errorMessage}</ApiErrorAlert>
               ) : null}
 
-              <TextField fullWidth name="tenant_name" autoComplete="organization">
-                <Label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2e3440]">
+              <div className="space-y-2">
+                <Label htmlFor="tenant_name" className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2e3440]">
                   {t("tenantName")}
                 </Label>
                 <Input
+                  id="tenant_name"
+                  name="tenant_name"
+                  autoComplete="organization"
                   placeholder={t("tenantPlaceholder")}
                   value={tenantName}
                   onChange={(ev) => setTenantName(ev.target.value)}
                   disabled={busy}
                 />
-              </TextField>
+              </div>
 
-              <TextField fullWidth name="admin_name" autoComplete="name">
-                <Label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2e3440]">
+              <div className="space-y-2">
+                <Label htmlFor="admin_name" className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2e3440]">
                   {t("adminName")}
                 </Label>
                 <Input
+                  id="admin_name"
+                  name="admin_name"
+                  autoComplete="name"
                   placeholder={t("adminPlaceholder")}
                   value={adminName}
                   onChange={(ev) => setAdminName(ev.target.value)}
                   disabled={busy}
                 />
-              </TextField>
+              </div>
 
-              <TextField fullWidth name="admin_email" type="email" autoComplete="email">
-                <Label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2e3440]">
+              <div className="space-y-2">
+                <Label htmlFor="admin_email" className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2e3440]">
                   {t("email")}
                 </Label>
                 <Input
+                  id="admin_email"
+                  name="admin_email"
+                  type="email"
+                  autoComplete="email"
                   placeholder={t("emailPlaceholder")}
                   value={adminEmail}
                   onChange={(ev) => setAdminEmail(ev.target.value)}
                   disabled={busy}
                 />
-              </TextField>
+              </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <TextField
-                  fullWidth
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                >
-                  <Label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2e3440]">
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2e3440]">
                     {t("password")}
                   </Label>
                   <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="new-password"
                     placeholder={t("passwordHint")}
                     value={password}
                     onChange={(ev) => setPassword(ev.target.value)}
                     disabled={busy}
                   />
-                </TextField>
+                </div>
 
-                <TextField
-                  fullWidth
-                  name="password_confirm"
-                  type="password"
-                  autoComplete="new-password"
-                >
-                  <Label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2e3440]">
+                <div className="space-y-2">
+                  <Label htmlFor="password_confirm" className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2e3440]">
                     {t("passwordConfirm")}
                   </Label>
                   <Input
+                    id="password_confirm"
+                    name="password_confirm"
+                    type="password"
+                    autoComplete="new-password"
                     placeholder={t("passwordRepeat")}
                     value={passwordConfirm}
                     onChange={(ev) => setPasswordConfirm(ev.target.value)}
                     disabled={busy}
                   />
-                </TextField>
+                </div>
               </div>
 
               <Button
@@ -177,7 +188,7 @@ export default function RegisterPage() {
               >
                 {busy ? (
                   <>
-                    <Spinner color="current" size="sm" />
+                    <Loader2 className="size-4 animate-spin" />
                     {t("processing")}
                   </>
                 ) : (

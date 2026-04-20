@@ -5,8 +5,10 @@ import type {
   CategoryCreateBody,
   CategoryUpdateBody,
 } from "@/lib/api/categories";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
-import { Button, Input, Label, TextField } from "@heroui/react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type Props = {
@@ -126,25 +128,29 @@ export function CategoryFormModal({
         <form className="flex flex-col gap-4" onSubmit={submit}>
           {error ? <p className="text-sm text-danger">{error}</p> : null}
 
-          <TextField fullWidth name="name">
-            <Label>Nama</Label>
+          <div className="space-y-2">
+            <Label htmlFor="category_name">Nama</Label>
             <Input
+              id="category_name"
+              name="name"
               value={form.name}
               onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
               disabled={busy}
             />
-          </TextField>
+          </div>
 
-          <TextField fullWidth name="description">
-            <Label>Deskripsi</Label>
+          <div className="space-y-2">
+            <Label htmlFor="category_description">Deskripsi</Label>
             <Input
+              id="category_description"
+              name="description"
               value={form.description}
               onChange={(e) =>
                 setForm((s) => ({ ...s, description: e.target.value }))
               }
               disabled={busy}
             />
-          </TextField>
+          </div>
 
           <InventorySelect
             label="Parent"
@@ -157,16 +163,19 @@ export function CategoryFormModal({
             isDisabled={busy}
           />
 
-          <TextField fullWidth name="sort_order" type="number">
-            <Label>Sort order</Label>
+          <div className="space-y-2">
+            <Label htmlFor="category_sort_order">Sort order</Label>
             <Input
+              id="category_sort_order"
+              name="sort_order"
+              type="number"
               value={form.sort_order}
               onChange={(e) =>
                 setForm((s) => ({ ...s, sort_order: e.target.value }))
               }
               disabled={busy}
             />
-          </TextField>
+          </div>
 
           <div className="mt-2 flex justify-end gap-2">
             <Button

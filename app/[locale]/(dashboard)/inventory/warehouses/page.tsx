@@ -1,6 +1,14 @@
 "use client";
 
 import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { DataTable, type DataTableColumn } from "@/components/ui/molecules/DataTable";
 import { InventorySearchField } from "@/components/ui/molecules/InventorySearchField";
 import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
 import { WarehouseFormModal } from "@/components/ui/organisms/warehouse/WarehouseFormModal";
@@ -18,16 +26,8 @@ import {
 } from "@/lib/api/warehouses";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { queryKeys } from "@/lib/query-keys";
-import {
-  Button,
-  Dropdown,
-  DropdownItem,
-  DropdownMenu,
-  DropdownPopover,
-  DropdownTrigger,
-  IconChevronDown,
-} from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MoreHorizontal } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
@@ -121,6 +121,55 @@ export default function InventoryWarehousesPage() {
   const rows = listQuery.data?.data ?? [];
   const pagination = listQuery.data?.pagination;
   const totalPages = pagination?.total_pages ?? 1;
+  const tableColumns: DataTableColumn<Warehouse>[] = useMemo(
+    () => [
+      { key: "code", header: t("tableCode"), sortKey: "code", cellClassName: "font-medium", render: (item) => item.code },
+      { key: "name", header: t("tableName"), sortKey: "name", render: (item) => item.name },
+      {
+        key: "active",
+        header: t("tableActive"),
+        sortKey: "is_active",
+        render: (item) => (
+          <span className={item.is_active ? "text-success-700 dark:text-success-400" : "text-default-500"}>
+            {item.is_active ? tc("yes") : tc("no")}
+          </span>
+        ),
+      },
+      {
+        key: "address",
+        header: t("tableAddress"),
+        sortKey: "address",
+        cellClassName: "max-w-[280px] text-default-600",
+        render: (item) => (item.address ? truncateAddress(item.address) : "—"),
+      },
+      {
+        key: "actions",
+        header: t("tableActions"),
+        headerClassName: "text-right",
+        cellClassName: "text-right",
+        render: (item) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon-sm" className="size-8">
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => setModalState({ open: true, mode: "edit", warehouse: item })}
+              >
+                {tc("edit")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDeleteTarget(item)}>
+                {tc("delete")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+      },
+    ],
+    [t, tc],
+  );
 
   function setQueryParams(next: Partial<WarehouseListParams>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -253,87 +302,19 @@ export default function InventoryWarehousesPage() {
         </Button>
       </form>
 
-      <div className="overflow-x-auto rounded-lg border border-default-200">
-        <table className="w-full min-w-[840px] border-collapse text-sm">
-          <thead className="bg-default-100/60 text-left">
-            <tr>
-              <th className="px-3 py-2 font-semibold">{t("tableCode")}</th>
-              <th className="px-3 py-2 font-semibold">{t("tableName")}</th>
-              <th className="px-3 py-2 font-semibold">{t("tableActive")}</th>
-              <th className="px-3 py-2 font-semibold">{t("tableAddress")}</th>
-              <th className="px-3 py-2 text-right font-semibold">{t("tableActions")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {listQuery.isLoading ? (
-              <tr>
-                <td className="px-3 py-6 text-default-500" colSpan={5}>
-                  {t("loading")}
-                </td>
-              </tr>
-            ) : rows.length === 0 ? (
-              <tr>
-                <td className="px-3 py-6 text-default-500" colSpan={5}>
-                  {tc("noData")}
-                </td>
-              </tr>
-            ) : (
-              rows.map((item) => (
-                <tr key={item.id} className="border-t border-default-200">
-                  <td className="px-3 py-2 font-medium">{item.code}</td>
-                  <td className="px-3 py-2">{item.name}</td>
-                  <td className="px-3 py-2">
-                    <span
-                      className={
-                        item.is_active
-                          ? "text-success-700 dark:text-success-400"
-                          : "text-default-500"
-                      }
-                    >
-                      {item.is_active ? tc("yes") : tc("no")}
-                    </span>
-                  </td>
-                  <td className="max-w-[280px] px-3 py-2 text-default-600">
-                    {item.address ? truncateAddress(item.address) : "—"}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <Dropdown>
-                      <DropdownTrigger className="inline-flex h-8 cursor-pointer items-center gap-1 rounded-md border border-default-200 bg-default-100 px-3 text-sm font-medium text-default-900 hover:bg-default-200 dark:border-default-100 dark:bg-default-50/10 dark:text-default-50 dark:hover:bg-default-50/15">
-                        {tc("actions")}
-                        <IconChevronDown className="size-4 opacity-70" />
-                      </DropdownTrigger>
-                      <DropdownPopover placement="bottom end">
-                        <DropdownMenu
-                          aria-label={t("ariaWarehouseActions")}
-                          onAction={(key) => {
-                            if (key === "edit") {
-                              setModalState({
-                                open: true,
-                                mode: "edit",
-                                warehouse: item,
-                              });
-                            }
-                            if (key === "delete") {
-                              setDeleteTarget(item);
-                            }
-                          }}
-                        >
-                          <DropdownItem key="edit" textValue={tc("edit")}>
-                            {tc("edit")}
-                          </DropdownItem>
-                          <DropdownItem key="delete" textValue={tc("delete")}>
-                            {tc("delete")}
-                          </DropdownItem>
-                        </DropdownMenu>
-                      </DropdownPopover>
-                    </Dropdown>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={tableColumns}
+        rows={rows}
+        rowKey={(item) => item.id}
+        sortState={{ key: sort, direction: order }}
+        onSortChange={({ key, direction }) =>
+          setQueryParams({ page: 1, sort: key, order: direction as "asc" | "desc" })
+        }
+        loading={listQuery.isLoading}
+        loadingText={t("loading")}
+        emptyText={tc("noData")}
+        minWidthClassName="min-w-[840px]"
+      />
 
       <div className="flex items-center justify-between">
         <Button

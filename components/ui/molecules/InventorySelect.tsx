@@ -1,7 +1,16 @@
 "use client";
 
-import { cn } from "@/lib/cn";
-import { Label, ListBox, Select } from "@heroui/react";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+
+const EMPTY_OPTION_VALUE = "__empty_option__";
 
 export type InventorySelectItem = {
   id: string;
@@ -51,45 +60,39 @@ export function InventorySelect({
       : validIds.has(value)
         ? value
         : (items[0]?.id ?? null);
+  const selectedValue = selectedKey === "" ? EMPTY_OPTION_VALUE : (selectedKey ?? "");
 
   return (
     <div className={cn("flex flex-col gap-1", fullWidth && "w-full", className)}>
       {label ? (
-        <Label className="text-xs font-medium text-default-600">{label}</Label>
+        <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
       ) : null}
       <Select
-        id={id}
+        value={selectedValue}
+        onValueChange={(next) =>
+          onChange(next === EMPTY_OPTION_VALUE ? "" : next)
+        }
+        disabled={isDisabled}
         name={name}
-        aria-label={label ? undefined : ariaLabel}
-        className={cn(fullWidth && "w-full")}
-        fullWidth={fullWidth}
-        variant={variant}
-        placeholder={placeholder}
-        isDisabled={isDisabled}
-        disabledKeys={disabledKeys.length ? disabledKeys : undefined}
-        selectedKey={selectedKey}
-        onSelectionChange={(key) => {
-          if (key === null) return;
-          onChange(String(key));
-        }}
       >
-        <Select.Trigger className="min-h-11 sm:min-h-10">
-          <Select.Value />
-          <Select.Indicator />
-        </Select.Trigger>
-        <Select.Popover className="max-h-60">
-          <ListBox>
-            {items.map((item) => (
-              <ListBox.Item
-                key={item.id}
-                id={item.id}
-                textValue={item.label}
-              >
-                {item.label}
-              </ListBox.Item>
-            ))}
-          </ListBox>
-        </Select.Popover>
+        <SelectTrigger
+          id={id}
+          aria-label={label ? undefined : ariaLabel}
+          className={cn("h-11 w-full sm:h-10", variant === "primary" && "border-primary/40")}
+        >
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map((item) => (
+            <SelectItem
+              key={item.id}
+              value={item.id === "" ? EMPTY_OPTION_VALUE : item.id}
+              disabled={disabledKeys.includes(item.id)}
+            >
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
       </Select>
     </div>
   );

@@ -5,7 +5,9 @@ import type {
   WarehouseCreateBody,
   WarehouseUpdateBody,
 } from "@/lib/api/warehouses";
-import { Button, Input, Label, TextField } from "@heroui/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { FormEvent, useEffect, useState } from "react";
 
 type Props = {
@@ -124,9 +126,11 @@ export function WarehouseFormModal({
         <form className="flex flex-col gap-4" onSubmit={submit}>
           {error ? <p className="text-sm text-danger">{error}</p> : null}
 
-          <TextField fullWidth name="code">
-            <Label>Kode</Label>
+          <div className="space-y-2">
+            <Label htmlFor="warehouse_code">Kode</Label>
             <Input
+              id="warehouse_code"
+              name="code"
               value={form.code}
               onChange={(e) =>
                 setForm((s) => ({ ...s, code: e.target.value }))
@@ -134,29 +138,33 @@ export function WarehouseFormModal({
               disabled={busy}
               autoComplete="off"
             />
-          </TextField>
+          </div>
 
-          <TextField fullWidth name="name">
-            <Label>Nama</Label>
+          <div className="space-y-2">
+            <Label htmlFor="warehouse_name">Nama</Label>
             <Input
+              id="warehouse_name"
+              name="name"
               value={form.name}
               onChange={(e) =>
                 setForm((s) => ({ ...s, name: e.target.value }))
               }
               disabled={busy}
             />
-          </TextField>
+          </div>
 
-          <TextField fullWidth name="address">
-            <Label>Alamat</Label>
+          <div className="space-y-2">
+            <Label htmlFor="warehouse_address">Alamat</Label>
             <Input
+              id="warehouse_address"
+              name="address"
               value={form.address}
               onChange={(e) =>
                 setForm((s) => ({ ...s, address: e.target.value }))
               }
               disabled={busy}
             />
-          </TextField>
+          </div>
 
           <label className="flex cursor-pointer items-center gap-2 text-sm">
             <input

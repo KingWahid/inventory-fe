@@ -1,38 +1,38 @@
 "use client";
 
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
-import { usePathname, useRouter } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { getMe, logout } from "@/lib/api/auth";
 import { queryKeys } from "@/lib/query-keys";
 import { useAuthStore } from "@/stores/auth";
-import {
-  Button,
-  CloseIcon,
-  Drawer,
-  Dropdown,
-  DropdownItem,
-  DropdownMenu,
-  DropdownPopover,
-  DropdownTrigger,
-  IconChevronDown,
-  useOverlayState,
-} from "@heroui/react";
 import { FiHelpCircle, FiSettings } from "react-icons/fi";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useState } from "react";
-import { FiMenu } from "react-icons/fi";
+import { FiChevronDown, FiMenu, FiX } from "react-icons/fi";
 
 export function DashboardShell({ children }: { children: ReactNode }) {
   const t = useTranslations("shell");
   const tc = useTranslations("common");
   const router = useRouter();
-  const pathname = usePathname();
   const accessToken = useAuthStore((s) => s.accessToken);
   const clearSession = useAuthStore((s) => s.clearSession);
 
-  const mobileNav = useOverlayState();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const [hydrated, setHydrated] = useState(false);
 
@@ -47,11 +47,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     if (!hydrated) return;
     if (!accessToken) router.replace("/login");
   }, [hydrated, accessToken, router]);
-
-  useEffect(() => {
-    mobileNav.close();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- close drawer on route change only
-  }, [pathname]);
 
   const meQuery = useQuery({
     queryKey: queryKeys.auth.me(),
@@ -119,9 +114,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               <Button
                 aria-label={t("openNav")}
                 variant="secondary"
-                size="sm"
-                className="min-h-11 min-w-11 shrink-0 px-0 md:hidden"
-                onPress={mobileNav.open}
+                size="icon-sm"
+                className="size-11 shrink-0 md:hidden"
+                onClick={() => setMobileNavOpen(true)}
               >
                 <FiMenu className="size-5" />
               </Button>
@@ -134,31 +129,27 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
             <div className="flex items-center gap-2">
               <LocaleSwitcher />
-              <Dropdown>
-                <DropdownTrigger className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-md border border-default-200 bg-white px-3 text-sm font-medium text-default-800 hover:bg-default-100 data-[focus-visible]:ring-2 data-[focus-visible]:ring-focus">
-                  {t("user")}
-                  <IconChevronDown className="size-4 opacity-70" />
-                </DropdownTrigger>
-                <DropdownPopover placement="bottom end">
-                  <DropdownMenu aria-label={t("userMenu")}>
-                    <DropdownItem key="email" isDisabled textValue={me?.email ?? ""}>
-                      {me?.email ?? "—"}
-                    </DropdownItem>
-                    <DropdownItem key="profile" isDisabled textValue={t("profile")}>
-                      {displayName}
-                    </DropdownItem>
-                    <DropdownItem key="tenant" isDisabled textValue={tenantLabel}>
-                      {tenantLabel}
-                    </DropdownItem>
-                  </DropdownMenu>
-                </DropdownPopover>
-              </Dropdown>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9">
+                    {t("user")}
+                    <FiChevronDown className="size-4 opacity-70" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem disabled>
+                    {me?.email ?? "—"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>{displayName}</DropdownMenuItem>
+                  <DropdownMenuItem disabled>{tenantLabel}</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
-                variant="primary"
+                variant="default"
                 size="sm"
-                className="min-h-9 px-4"
-                onPress={() => logoutMut.mutate()}
-                isDisabled={logoutMut.isPending}
+                className="h-9 px-4"
+                onClick={() => logoutMut.mutate()}
+                disabled={logoutMut.isPending}
               >
                 {logoutMut.isPending ? t("logoutPending") : t("logout")}
               </Button>
@@ -166,31 +157,27 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <Drawer state={mobileNav}>
-          <Drawer.Backdrop />
-          <Drawer.Content
-            placement="left"
-            className="w-[min(18rem,85vw)] data-[placement=left]:max-h-full"
-          >
-            <Drawer.Dialog className="flex h-[100dvh] max-h-[100dvh] flex-col rounded-none outline-none">
-              <div className="flex items-center justify-between border-b border-default-200 px-4 py-3">
-                <span className="font-semibold">{t("menu")}</span>
+        <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+          <SheetContent side="left" className="w-[min(18rem,85vw)] p-0">
+            <SheetHeader className="border-b border-default-200">
+              <SheetTitle className="flex items-center justify-between">
+                <span>{t("menu")}</span>
                 <Button
                   aria-label={t("closeNav")}
-                  variant="secondary"
-                  size="sm"
-                  className="min-h-11 min-w-11 px-0"
-                  onPress={mobileNav.close}
+                  variant="ghost"
+                  size="icon-sm"
+                  className="size-10"
+                  onClick={() => setMobileNavOpen(false)}
                 >
-                  <CloseIcon className="size-5" />
+                  <FiX className="size-5" />
                 </Button>
-              </div>
-              <Drawer.Body className="min-h-0 flex-1 overflow-y-auto p-0">
-                <DashboardNav onNavigate={mobileNav.close} />
-              </Drawer.Body>
-            </Drawer.Dialog>
-          </Drawer.Content>
-        </Drawer>
+              </SheetTitle>
+            </SheetHeader>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <DashboardNav onNavigate={() => setMobileNavOpen(false)} />
+            </div>
+          </SheetContent>
+        </Sheet>
 
         <div className="flex min-h-0 min-w-0 flex-1">
           <div className="flex min-w-0 flex-1 flex-col">

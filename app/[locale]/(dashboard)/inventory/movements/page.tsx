@@ -3,6 +3,7 @@
 import { InventorySearchField } from "@/components/ui/molecules/InventorySearchField";
 import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
 import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
+import { Button } from "@/components/ui/button";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import {
   listMovements,
@@ -13,7 +14,6 @@ import {
 } from "@/lib/api/movements";
 import { listWarehouses } from "@/lib/api/warehouses";
 import { queryKeys } from "@/lib/query-keys";
-import { Button } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";

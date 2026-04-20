@@ -1,6 +1,14 @@
 "use client";
 
 import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { DataTable, type DataTableColumn } from "@/components/ui/molecules/DataTable";
 import { InventorySearchField } from "@/components/ui/molecules/InventorySearchField";
 import { CategoryFormModal } from "@/components/ui/organisms/category/CategoryFormModal";
 import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
@@ -17,16 +25,8 @@ import {
 } from "@/lib/api/categories";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { queryKeys } from "@/lib/query-keys";
-import {
-  Button,
-  Dropdown,
-  DropdownItem,
-  DropdownMenu,
-  DropdownPopover,
-  DropdownTrigger,
-  IconChevronDown,
-} from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MoreHorizontal } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
@@ -77,6 +77,65 @@ export default function InventoryCategoriesPage() {
   const rows = listQuery.data?.data ?? [];
   const pagination = listQuery.data?.pagination;
   const totalPages = pagination?.total_pages ?? 1;
+  const tableColumns: DataTableColumn<Category>[] = useMemo(
+    () => [
+      {
+        key: "name",
+        header: t("tableName"),
+        sortKey: "name",
+        render: (item) => item.name,
+      },
+      {
+        key: "description",
+        header: t("tableDescription"),
+        sortKey: "description",
+        cellClassName: "text-default-600",
+        render: (item) => item.description || "-",
+      },
+      {
+        key: "parent",
+        header: t("tableParent"),
+        sortKey: "parent_id",
+        cellClassName: "text-default-600",
+        render: (item) => (item.parent_id ? `${item.parent_id.slice(0, 8)}...` : "-"),
+      },
+      {
+        key: "sort",
+        header: t("tableSort"),
+        sortKey: "sort_order",
+        cellClassName: "text-default-600",
+        render: (item) => item.sort_order ?? "-",
+      },
+      {
+        key: "actions",
+        header: t("tableActions"),
+        headerClassName: "text-right",
+        cellClassName: "text-right",
+        render: (item) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon-sm" className="size-8">
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() =>
+                  setModalState({ open: true, mode: "edit", category: item })
+                }
+              >
+                {tc("edit")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDeleteTarget(item)}>
+                {tc("delete")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+      },
+    ],
+    [t, tc],
+  );
 
   function setQueryParams(next: Partial<CategoryListParams>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -143,7 +202,7 @@ export default function InventoryCategoriesPage() {
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <Button
           variant="primary"
-          onPress={() =>
+          onClick={() =>
             setModalState({ open: true, mode: "create", category: null })
           }
         >
@@ -177,83 +236,24 @@ export default function InventoryCategoriesPage() {
         </Button>
       </form>
 
-      <div className="overflow-x-auto rounded-lg border border-default-200">
-        <table className="w-full min-w-[720px] border-collapse text-sm">
-          <thead className="bg-default-100/60 text-left">
-            <tr>
-              <th className="px-3 py-2 font-semibold">{t("tableName")}</th>
-              <th className="px-3 py-2 font-semibold">{t("tableDescription")}</th>
-              <th className="px-3 py-2 font-semibold">{t("tableParent")}</th>
-              <th className="px-3 py-2 font-semibold">{t("tableSort")}</th>
-              <th className="px-3 py-2 text-right font-semibold">{t("tableActions")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {listQuery.isLoading ? (
-              <tr>
-                <td className="px-3 py-6 text-default-500" colSpan={5}>
-                  {t("loading")}
-                </td>
-              </tr>
-            ) : rows.length === 0 ? (
-              <tr>
-                <td className="px-3 py-6 text-default-500" colSpan={5}>
-                  {tc("noData")}
-                </td>
-              </tr>
-            ) : (
-              rows.map((item) => (
-                <tr key={item.id} className="border-t border-default-200">
-                  <td className="px-3 py-2">{item.name}</td>
-                  <td className="px-3 py-2 text-default-600">
-                    {item.description || "-"}
-                  </td>
-                  <td className="px-3 py-2 text-default-600">
-                    {item.parent_id ? `${item.parent_id.slice(0, 8)}...` : "-"}
-                  </td>
-                  <td className="px-3 py-2 text-default-600">
-                    {item.sort_order ?? "-"}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <Dropdown>
-                      <DropdownTrigger className="inline-flex h-8 cursor-pointer items-center gap-1 rounded-md border border-default-200 bg-default-100 px-3 text-sm font-medium text-default-900 hover:bg-default-200 dark:border-default-100 dark:bg-default-50/10 dark:text-default-50 dark:hover:bg-default-50/15">
-                        {tc("actions")}
-                        <IconChevronDown className="size-4 opacity-70" />
-                      </DropdownTrigger>
-                      <DropdownPopover placement="bottom end">
-                        <DropdownMenu
-                          aria-label={t("ariaCategoryActions")}
-                          onAction={(key) => {
-                            if (key === "edit") {
-                              setModalState({ open: true, mode: "edit", category: item });
-                            }
-                            if (key === "delete") {
-                              setDeleteTarget(item);
-                            }
-                          }}
-                        >
-                          <DropdownItem key="edit" textValue={tc("edit")}>
-                            {tc("edit")}
-                          </DropdownItem>
-                          <DropdownItem key="delete" textValue={tc("delete")}>
-                            {tc("delete")}
-                          </DropdownItem>
-                        </DropdownMenu>
-                      </DropdownPopover>
-                    </Dropdown>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={tableColumns}
+        rows={rows}
+        rowKey={(item) => item.id}
+        sortState={{ key: sort, direction: order }}
+        onSortChange={({ key, direction }) =>
+          setQueryParams({ page: 1, sort: key, order: direction })
+        }
+        loading={listQuery.isLoading}
+        loadingText={t("loading")}
+        emptyText={tc("noData")}
+      />
 
       <div className="flex items-center justify-between">
         <Button
           variant="secondary"
-          onPress={() => setQueryParams({ page: Math.max(1, page - 1) })}
-          isDisabled={page <= 1}
+          onClick={() => setQueryParams({ page: Math.max(1, page - 1) })}
+          disabled={page <= 1}
         >
           {tc("prev")}
         </Button>
@@ -262,8 +262,8 @@ export default function InventoryCategoriesPage() {
         </div>
         <Button
           variant="secondary"
-          onPress={() => setQueryParams({ page: Math.min(totalPages, page + 1) })}
-          isDisabled={page >= totalPages}
+          onClick={() => setQueryParams({ page: Math.min(totalPages, page + 1) })}
+          disabled={page >= totalPages}
         >
           {tc("next")}
         </Button>
@@ -298,15 +298,15 @@ export default function InventoryCategoriesPage() {
             <div className="mt-4 flex justify-end gap-2">
               <Button
                 variant="secondary"
-                onPress={() => setDeleteTarget(null)}
-                isDisabled={deleteMut.isPending}
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleteMut.isPending}
               >
                 {tc("cancel")}
               </Button>
               <Button
                 variant="primary"
-                onPress={() => deleteMut.mutate(deleteTarget.id)}
-                isDisabled={deleteMut.isPending}
+                onClick={() => deleteMut.mutate(deleteTarget.id)}
+                disabled={deleteMut.isPending}
               >
                 {deleteMut.isPending ? tc("deleting") : tc("delete")}
               </Button>

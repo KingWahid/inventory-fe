@@ -9,6 +9,9 @@ import {
   type MovementLineCreateBody,
   type MovementType,
 } from "@/lib/api/movements";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { listProducts } from "@/lib/api/products";
 import { listWarehouses } from "@/lib/api/warehouses";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
@@ -18,7 +21,6 @@ import { PageHeader } from "@/components/ui/molecules/PageHeader";
 import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
 import { useRouter } from "@/i18n/navigation";
 import { queryKeys } from "@/lib/query-keys";
-import { Button, Input, Label, TextField } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
@@ -269,23 +271,27 @@ export default function NewMovementPage() {
           ))}
         </div>
 
-        <TextField fullWidth className="max-w-xl" name="reference_number">
-          <Label>{t("refLabel")}</Label>
+        <div className="max-w-xl space-y-2">
+          <Label htmlFor="reference_number">{t("refLabel")}</Label>
           <Input
+            id="reference_number"
+            name="reference_number"
             value={referenceNumber}
             onChange={(e) => setReferenceNumber(e.target.value)}
             placeholder={t("refPlaceholder")}
             autoComplete="off"
           />
-        </TextField>
+        </div>
 
-        <TextField fullWidth className="max-w-xl" name="movement_notes">
-          <Label>{t("movementNotes")}</Label>
+        <div className="max-w-xl space-y-2">
+          <Label htmlFor="movement_notes">{t("movementNotes")}</Label>
           <Input
+            id="movement_notes"
+            name="movement_notes"
             value={movementNotes}
             onChange={(e) => setMovementNotes(e.target.value)}
           />
-        </TextField>
+        </div>
 
         {movementType === "inbound" ? (
           <InventorySelect

@@ -1,6 +1,20 @@
 "use client";
 
 import { StockLiveIndicator } from "@/components/dashboard/StockLiveIndicator";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 import { buildActivitySseUrl } from "@/lib/api/sse-activity-url";
 import { listAuditLogs, type AuditLog } from "@/lib/api/audit";
 import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
@@ -16,6 +30,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import {
   FiAlertTriangle,
   FiCheck,
@@ -27,6 +42,12 @@ import {
 import { useAuthStore } from "@/stores/auth";
 
 const STALE_MS = 30_000;
+const chartConfig = {
+  movements: {
+    label: "Movements",
+    color: "var(--chart-1)",
+  },
+} satisfies ChartConfig;
 
 function formatNum(n: number, locale: string): string {
   const tag = locale === "en" ? "en-US" : "id-ID";
@@ -94,11 +115,26 @@ export default function DashboardPage() {
   const summary = summaryQuery.data;
   const chart = chartQuery.data;
 
-  const maxCount = useMemo(() => {
-    const pts = chart?.points ?? [];
-    if (pts.length === 0) return 1;
-    return Math.max(1, ...pts.map((p) => p.movement_count));
-  }, [chart?.points]);
+  const chartData = useMemo(
+    () =>
+      (chart?.points ?? []).map((p) => ({
+        bucket: shortBucketLabel(p.bucket_start, chart?.period ?? period, locale),
+        movements: p.movement_count,
+      })),
+    [chart, locale, period],
+  );
+
+  const chartTrend = useMemo(() => {
+    if (chartData.length < 2) return null;
+    const last = chartData[chartData.length - 1]?.movements ?? 0;
+    const prev = chartData[chartData.length - 2]?.movements ?? 0;
+    if (prev === 0) return null;
+    const pct = ((last - prev) / prev) * 100;
+    return {
+      up: pct >= 0,
+      percent: Math.abs(pct).toFixed(1),
+    };
+  }, [chartData]);
 
   const chartError =
     summaryQuery.error ??
@@ -202,13 +238,22 @@ export default function DashboardPage() {
       </section>
 
       <section>
-        <div className="rounded-xl border border-default-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+        <Card className="border-default-200">
+          <CardHeader className="flex flex-row items-start justify-between gap-3">
             <div>
-              <h2 className="text-5xl font-semibold tracking-tight text-[#02395b]">{t("chartTitle")}</h2>
-              <p className="mt-1 text-sm text-default-600">{t("chartSubtitle")}</p>
+              <CardTitle className="text-2xl font-semibold tracking-tight text-[#02395b]">
+                {t("chartTitle")}
+              </CardTitle>
+              <CardDescription className="mt-1">{t("chartSubtitle")}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className={`rounded-full px-4 py-1.5 text-xs font-semibold ${period === "daily" ? "bg-[#02395b] text-white" : "bg-default-100 text-default-700"}`}
+                onClick={() => setPeriod("daily")}
+              >
+                {t("periodDaily")}
+              </button>
               <button
                 type="button"
                 className={`rounded-full px-4 py-1.5 text-xs font-semibold ${period === "weekly" ? "bg-[#02395b] text-white" : "bg-default-100 text-default-700"}`}
@@ -224,54 +269,57 @@ export default function DashboardPage() {
                 {t("periodMonthly")}
               </button>
             </div>
-          </div>
-          <div className="mt-4">
-          {chartLoading ? (
-            <div className="flex h-48 items-end gap-1">
-              {Array.from({ length: 12 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="min-w-0 flex-1 animate-pulse rounded-t bg-default-200"
-                  style={{ height: `${20 + (i % 5) * 12}%` }}
-                />
-              ))}
-            </div>
-          ) : chart && chart.points.length > 0 ? (
-            <div className="overflow-x-auto pb-6">
-              <div className="flex min-h-[220px] min-w-[480px] items-end gap-1 pt-2">
-                {chart.points.map((p, i) => {
-                  const barPx = Math.max(
-                    4,
-                    Math.round((p.movement_count / maxCount) * 168),
-                  );
-                  return (
-                    <div
-                      key={`${p.bucket_start}-${i}`}
-                      className="flex min-w-[24px] flex-1 flex-col items-center justify-end"
-                    >
-                      <span className="mb-1 text-[10px] tabular-nums text-default-600">
-                        {p.movement_count}
-                      </span>
-                      <div
-                        className="w-full max-w-full rounded-t bg-primary/80"
-                        style={{ height: barPx }}
-                        title={`${p.bucket_start}: ${p.movement_count}`}
-                      />
-                      <span className="mt-2 max-w-[4rem] truncate text-center text-[10px] text-default-500">
-                        {shortBucketLabel(p.bucket_start, chart.period, locale)}
-                      </span>
-                    </div>
-                  );
-                })}
+          </CardHeader>
+          <CardContent>
+            {chartLoading ? (
+              <div className="flex h-60 items-end gap-1">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="min-w-0 flex-1 animate-pulse rounded-t bg-default-200"
+                    style={{ height: `${20 + (i % 5) * 12}%` }}
+                  />
+                ))}
               </div>
+            ) : chartData.length > 0 ? (
+              <ChartContainer config={chartConfig} className="h-60 w-full">
+                <BarChart accessibilityLayer data={chartData}>
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="bucket"
+                    tickLine={false}
+                    tickMargin={10}
+                    axisLine={false}
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Bar dataKey="movements" fill="var(--color-movements)" radius={8} />
+                </BarChart>
+              </ChartContainer>
+            ) : (
+              <p className="py-8 text-center text-sm text-default-500">
+                {t("chartEmpty")}
+              </p>
+            )}
+          </CardContent>
+          <CardFooter className="flex-col items-start gap-2 text-sm">
+            {chartTrend ? (
+              <div className="flex items-center gap-2 font-medium">
+                Trending {chartTrend.up ? "up" : "down"} by {chartTrend.percent}%
+                <FiRepeat className="h-4 w-4" />
+              </div>
+            ) : null}
+            <div className="text-muted-foreground">
+              {period === "daily"
+                ? t("periodDaily")
+                : period === "weekly"
+                  ? t("periodWeekly")
+                  : t("periodMonthly")}
             </div>
-          ) : (
-            <p className="py-8 text-center text-sm text-default-500">
-              {t("chartEmpty")}
-            </p>
-          )}
-          </div>
-        </div>
+          </CardFooter>
+        </Card>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">

@@ -10,6 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
+        primary: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
@@ -46,19 +47,26 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  onPress,
+  isDisabled,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    onPress?: React.MouseEventHandler<HTMLButtonElement>
+    isDisabled?: boolean
   }) {
   const Comp = asChild ? Slot.Root : "button"
+  const resolvedVariant = variant === "primary" ? "default" : variant
 
   return (
     <Comp
       data-slot="button"
-      data-variant={variant}
+      data-variant={resolvedVariant}
       data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant: resolvedVariant, size, className }))}
+      onClick={props.onClick ?? onPress}
+      disabled={props.disabled ?? isDisabled}
       {...props}
     />
   )

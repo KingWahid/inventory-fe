@@ -2,13 +2,15 @@
 
 import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
 import type { Category } from "@/lib/api/categories";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type {
   Product,
   ProductCreateBody,
   ProductUpdateBody,
 } from "@/lib/api/products";
 import { formatIdr } from "@/lib/format/currency";
-import { Button, Input, Label, TextField } from "@heroui/react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type Props = {
@@ -200,23 +202,27 @@ export function ProductFormModal({
         <form className="flex flex-col gap-4" onSubmit={submit}>
           {error ? <p className="text-sm text-danger">{error}</p> : null}
 
-          <TextField fullWidth name="sku">
-            <Label>SKU</Label>
+          <div className="space-y-2">
+            <Label htmlFor="product_sku">SKU</Label>
             <Input
+              id="product_sku"
+              name="sku"
               value={form.sku}
               onChange={(e) => setForm((s) => ({ ...s, sku: e.target.value }))}
               disabled={busy}
             />
-          </TextField>
+          </div>
 
-          <TextField fullWidth name="name">
-            <Label>Nama</Label>
+          <div className="space-y-2">
+            <Label htmlFor="product_name">Nama</Label>
             <Input
+              id="product_name"
+              name="name"
               value={form.name}
               onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
               disabled={busy}
             />
-          </TextField>
+          </div>
 
           <InventorySelect
             label="Kategori"
@@ -229,9 +235,12 @@ export function ProductFormModal({
             isDisabled={busy}
           />
 
-          <TextField fullWidth name="price" inputMode="decimal">
-            <Label>Harga (IDR)</Label>
+          <div className="space-y-2">
+            <Label htmlFor="product_price">Harga (IDR)</Label>
             <Input
+              id="product_price"
+              name="price"
+              inputMode="decimal"
               value={form.price}
               onChange={(e) =>
                 setForm((s) => ({ ...s, price: e.target.value }))
@@ -239,44 +248,51 @@ export function ProductFormModal({
               disabled={busy}
               placeholder="0"
             />
-          </TextField>
+          </div>
           {previewPrice !== null ? (
             <p className="text-xs text-default-500">
               Pratinjau: {formatIdr(previewPrice)}
             </p>
           ) : null}
 
-          <TextField fullWidth name="description">
-            <Label>Deskripsi</Label>
+          <div className="space-y-2">
+            <Label htmlFor="product_description">Deskripsi</Label>
             <Input
+              id="product_description"
+              name="description"
               value={form.description}
               onChange={(e) =>
                 setForm((s) => ({ ...s, description: e.target.value }))
               }
               disabled={busy}
             />
-          </TextField>
+          </div>
 
-          <TextField fullWidth name="unit">
-            <Label>Satuan</Label>
+          <div className="space-y-2">
+            <Label htmlFor="product_unit">Satuan</Label>
             <Input
+              id="product_unit"
+              name="unit"
               value={form.unit}
               onChange={(e) => setForm((s) => ({ ...s, unit: e.target.value }))}
               disabled={busy}
               placeholder="pcs"
             />
-          </TextField>
+          </div>
 
-          <TextField fullWidth name="reorder_level" type="number">
-            <Label>Reorder level</Label>
+          <div className="space-y-2">
+            <Label htmlFor="product_reorder_level">Reorder level</Label>
             <Input
+              id="product_reorder_level"
+              name="reorder_level"
+              type="number"
               value={form.reorder_level}
               onChange={(e) =>
                 setForm((s) => ({ ...s, reorder_level: e.target.value }))
               }
               disabled={busy}
             />
-          </TextField>
+          </div>
 
           <div className="mt-2 flex justify-end gap-2">
             <Button

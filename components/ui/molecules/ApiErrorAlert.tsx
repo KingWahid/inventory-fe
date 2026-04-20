@@ -1,6 +1,7 @@
 "use client";
 
-import { Alert } from "@heroui/react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 import type { ReactNode } from "react";
 
 type Props = {
@@ -10,12 +11,10 @@ type Props = {
 
 export function ApiErrorAlert({ title, children }: Props) {
   return (
-    <Alert status="danger">
-      <Alert.Indicator />
-      <Alert.Content>
-        <Alert.Title>{title}</Alert.Title>
-        <Alert.Description>{children}</Alert.Description>
-      </Alert.Content>
+    <Alert variant="destructive">
+      <AlertTriangle className="mt-0.5 size-4" />
+      <AlertTitle>{title}</AlertTitle>
+      <AlertDescription>{children}</AlertDescription>
     </Alert>
   );
 }

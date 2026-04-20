@@ -6,6 +6,7 @@ import {
   getMovement,
   type MovementStatus,
 } from "@/lib/api/movements";
+import { Button } from "@/components/ui/button";
 import { listProducts } from "@/lib/api/products";
 import { listWarehouses } from "@/lib/api/warehouses";
 import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
@@ -13,7 +14,6 @@ import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTe
 import { useRouter } from "@/i18n/navigation";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { queryKeys } from "@/lib/query-keys";
-import { Button } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
