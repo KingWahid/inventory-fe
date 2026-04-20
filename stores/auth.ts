@@ -1,3 +1,7 @@
+import {
+  clearSessionCookie,
+  setSessionCookie,
+} from "@/lib/auth/session-cookie";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
@@ -25,9 +29,14 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       accessToken: null,
       refreshToken: null,
-      setSession: (accessToken, refreshToken) =>
-        set({ accessToken, refreshToken }),
-      clearSession: () => set({ accessToken: null, refreshToken: null }),
+      setSession: (accessToken, refreshToken) => {
+        set({ accessToken, refreshToken });
+        setSessionCookie();
+      },
+      clearSession: () => {
+        set({ accessToken: null, refreshToken: null });
+        clearSessionCookie();
+      },
     }),
     {
       name: "inventory-auth",

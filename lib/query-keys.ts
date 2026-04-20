@@ -16,8 +16,18 @@ export const queryKeys = {
     all: inventoryRoot,
     /** Aligns with plaintext probe in `lib/api/health.ts`. */
     health: () => [...inventoryRoot, "health"] as const,
-    /** Placeholders — extend when listing APIs ship. */
     products: [...inventoryRoot, "products"] as const,
-    categories: [...inventoryRoot, "categories"] as const,
+    categories: {
+      all: () => [...inventoryRoot, "categories"] as const,
+      list: (params: {
+        page?: number;
+        per_page?: number;
+        search?: string;
+        sort?: string;
+        order?: "asc" | "desc";
+      }) => [...inventoryRoot, "categories", "list", params] as const,
+      detail: (id: string) =>
+        [...inventoryRoot, "categories", "detail", id] as const,
+    },
   },
 } as const;
