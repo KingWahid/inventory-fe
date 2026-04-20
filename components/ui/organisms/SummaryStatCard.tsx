@@ -1,10 +1,13 @@
 "use client";
+import type { ReactNode } from "react";
 
 type Props = {
   title: string;
   subtitle?: string;
   value: string;
   loading: boolean;
+  tone?: "default" | "danger";
+  icon?: ReactNode;
 };
 
 export function SummaryStatCard({
@@ -12,22 +15,35 @@ export function SummaryStatCard({
   subtitle,
   value,
   loading,
+  tone = "default",
+  icon,
 }: Props) {
   return (
-    <div className="rounded-lg border border-default-200 bg-background p-4 shadow-sm dark:border-default-100">
-      <div className="text-xs font-medium uppercase tracking-wide text-default-500">
-        {title}
+    <div className="rounded-xl border border-default-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1e293b]">
+          {title}
+        </div>
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-[#d9efff] text-sm text-[#0a5a8c]">
+          {icon}
+        </span>
       </div>
-      {subtitle ? (
-        <div className="mt-0.5 text-xs text-default-500">{subtitle}</div>
-      ) : null}
-      <div className="mt-2 text-2xl font-semibold tabular-nums">
+      <div
+        className={`mt-3 text-5xl font-semibold leading-none tabular-nums ${tone === "danger" ? "text-danger-700" : "text-[#111827]"}`}
+      >
         {loading ? (
-          <span className="inline-block h-8 w-16 animate-pulse rounded bg-default-200 dark:bg-default-800" />
+          <span className="inline-block h-10 w-16 animate-pulse rounded bg-default-200" />
         ) : (
           value
         )}
       </div>
+      {subtitle ? (
+        <div
+          className={`mt-2 text-sm italic ${tone === "danger" ? "text-danger-500" : "text-default-500"}`}
+        >
+          {subtitle}
+        </div>
+      ) : null}
     </div>
   );
 }

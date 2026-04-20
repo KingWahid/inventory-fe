@@ -1,14 +1,15 @@
 "use client";
 
 import { Link, usePathname } from "@/i18n/navigation";
+import { FiBarChart2, FiBox, FiGrid, FiLayers, FiRepeat, FiShield } from "react-icons/fi";
 import { useTranslations } from "next-intl";
 
 function linkClass(active: boolean): string {
   return [
-    "block min-h-11 rounded-md px-3 py-2 text-sm transition-colors sm:min-h-0",
+    "group relative flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors sm:min-h-0",
     active
-      ? "bg-primary/15 font-medium text-primary"
-      : "text-default-700 hover:bg-default-100 dark:text-default-300 dark:hover:bg-default-50/10",
+      ? "bg-[#e9f5ff] font-semibold text-[#02395b]"
+      : "text-[#425466] hover:bg-[#f4f8fb]",
   ].join(" ");
 }
 
@@ -28,18 +29,21 @@ export function DashboardNav({ onNavigate }: Props) {
     pathname === "/inventory/movements" ||
     pathname.startsWith("/inventory/movements/");
   const auditActive = pathname === "/inventory/audit";
+  const iconClass = "size-4 shrink-0";
 
   return (
-    <nav className="flex flex-col gap-1 p-3" aria-label={t("main")}>
+    <nav className="flex flex-col gap-2 p-3" aria-label={t("main")}>
       <Link
         href="/dashboard"
         className={linkClass(dashActive)}
         onClick={() => onNavigate?.()}
       >
+        <FiGrid className={iconClass} />
         {t("dashboard")}
+        {dashActive ? <span className="ml-auto h-6 w-0.5 rounded-full bg-[#0a5a8c]" /> : null}
       </Link>
 
-      <div className="px-3 pt-2 text-xs font-semibold uppercase tracking-wide text-default-500">
+      <div className="px-3 pt-3 text-xs font-semibold uppercase tracking-[0.16em] text-default-400">
         {t("master")}
       </div>
       <Link
@@ -47,6 +51,7 @@ export function DashboardNav({ onNavigate }: Props) {
         className={`${linkClass(catActive)} pl-6`}
         onClick={() => onNavigate?.()}
       >
+        <FiLayers className={iconClass} />
         {t("categories")}
       </Link>
       <Link
@@ -54,6 +59,7 @@ export function DashboardNav({ onNavigate }: Props) {
         className={`${linkClass(prodActive)} pl-6`}
         onClick={() => onNavigate?.()}
       >
+        <FiBox className={iconClass} />
         {t("products")}
       </Link>
       <Link
@@ -61,6 +67,7 @@ export function DashboardNav({ onNavigate }: Props) {
         className={`${linkClass(whActive)} pl-6`}
         onClick={() => onNavigate?.()}
       >
+        <FiBarChart2 className={iconClass} />
         {t("warehouses")}
       </Link>
 
@@ -69,6 +76,7 @@ export function DashboardNav({ onNavigate }: Props) {
         className={linkClass(movActive)}
         onClick={() => onNavigate?.()}
       >
+        <FiRepeat className={iconClass} />
         {t("movements")}
       </Link>
       <Link
@@ -76,6 +84,7 @@ export function DashboardNav({ onNavigate }: Props) {
         className={linkClass(auditActive)}
         onClick={() => onNavigate?.()}
       >
+        <FiShield className={iconClass} />
         {t("audit")}
       </Link>
     </nav>
