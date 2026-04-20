@@ -2,6 +2,8 @@
  * TanStack Query v5 key factories — extend inventory stubs in F5+.
  */
 
+import type { AuditLogListParams } from "./api/audit";
+
 const authRoot = ["auth"] as const;
 
 const inventoryRoot = ["inventory"] as const;
@@ -66,6 +68,16 @@ export const queryKeys = {
       }) => [...inventoryRoot, "movements", "list", params] as const,
       detail: (id: string) =>
         [...inventoryRoot, "movements", "detail", id] as const,
+    },
+    dashboard: {
+      summary: () => [...inventoryRoot, "dashboard", "summary"] as const,
+      movementsChart: (params: { period: "daily" | "weekly" | "monthly" }) =>
+        [...inventoryRoot, "dashboard", "movementsChart", params] as const,
+    },
+    audit: {
+      all: () => [...inventoryRoot, "audit"] as const,
+      list: (params: AuditLogListParams) =>
+        [...inventoryRoot, "audit", "list", params] as const,
     },
   },
 } as const;
