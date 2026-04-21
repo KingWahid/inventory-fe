@@ -120,8 +120,17 @@ export type AdjustmentCreateBody = {
   | { destination_warehouse_id: string; source_warehouse_id?: undefined }
 );
 
+function resolveIdempotencyKey(key: string): string {
+  const trimmed = key.trim();
+  if (trimmed) return trimmed;
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `idem-${Date.now()}`;
+}
+
 function idempotencyHeaders(key: string): { "Idempotency-Key": string } {
-  return { "Idempotency-Key": key };
+  return { "Idempotency-Key": resolveIdempotencyKey(key) };
 }
 
 export async function createInboundDraft(

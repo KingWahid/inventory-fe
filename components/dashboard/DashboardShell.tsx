@@ -15,11 +15,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
-import { useRouter } from "@/i18n/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { getMe, logout } from "@/lib/api/auth";
 import { queryKeys } from "@/lib/query-keys";
-import { useAuthStore } from "@/stores/auth";
-import { FiHelpCircle, FiSettings } from "react-icons/fi";
+import {
+  hasAuthHydrated,
+  onAuthFinishHydration,
+  useAuthStore,
+} from "@/stores/auth";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useState } from "react";
@@ -28,7 +31,9 @@ import { FiChevronDown, FiMenu, FiX } from "react-icons/fi";
 export function DashboardShell({ children }: { children: ReactNode }) {
   const t = useTranslations("shell");
   const tc = useTranslations("common");
+  const tn = useTranslations("nav");
   const router = useRouter();
+  const pathname = usePathname();
   const accessToken = useAuthStore((s) => s.accessToken);
   const clearSession = useAuthStore((s) => s.clearSession);
 
@@ -38,8 +43,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
   /* eslint-disable react-hooks/set-state-in-effect -- zustand persist hydration gate */
   useEffect(() => {
-    setHydrated(useAuthStore.persist.hasHydrated());
-    return useAuthStore.persist.onFinishHydration(() => setHydrated(true));
+    setHydrated(hasAuthHydrated());
+    return onAuthFinishHydration(() => setHydrated(true));
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -80,6 +85,17 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const tenantLabel = me?.tenant_id
     ? `${t("tenant")} ${me.tenant_id.slice(0, 8)}…`
     : t("tenant");
+  const breadcrumbLabel = (() => {
+    if (pathname === "/dashboard") return tn("dashboard");
+    if (pathname === "/inventory/categories") return tn("categories");
+    if (pathname === "/inventory/products") return tn("products");
+    if (pathname === "/inventory/warehouses") return tn("warehouses");
+    if (pathname === "/inventory/audit") return tn("audit");
+    if (pathname === "/inventory/movements") return tn("movements");
+    if (pathname === "/inventory/movements/new") return `${tn("movements")} / new`;
+    if (pathname.startsWith("/inventory/movements/")) return `${tn("movements")} / detail`;
+    return t("dashboardLabel");
+  })();
 
   return (
     <div className="flex min-h-screen min-w-0 flex-1 bg-[#f7fafc]">
@@ -94,16 +110,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <DashboardNav />
-        </div>
-        <div className="space-y-1 border-t border-default-100 p-3">
-          <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-[#5b6b7f] hover:bg-[#f4f8fb]">
-            <FiSettings className="size-4" />
-            {t("settings")}
-          </button>
-          <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-[#5b6b7f] hover:bg-[#f4f8fb]">
-            <FiHelpCircle className="size-4" />
-            {t("support")}
-          </button>
         </div>
       </aside>
 
@@ -123,7 +129,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               <div className="hidden text-sm text-default-600 lg:flex lg:items-center lg:gap-2">
                 <span>{tc("brand")}</span>
                 <span>/</span>
-                <span className="font-semibold text-[#02395b]">{t("dashboardLabel")}</span>
+                <span className="font-semibold text-[#02395b]">{breadcrumbLabel}</span>
               </div>
             </div>
 

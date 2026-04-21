@@ -87,6 +87,18 @@ function rejectIfEnvelopeFailure(
   );
 }
 
+function isAuthFailureEnvelope(data: unknown): data is ApiEnvelopeFail {
+  if (!isEnvelopeObject(data) || data.success !== false) return false;
+  const envelope = data as ApiEnvelopeFail;
+  const code = envelope.error?.code?.toUpperCase?.() ?? "";
+  if (!code) return false;
+  return (
+    code.includes("UNAUTHORIZED") ||
+    code.includes("TOKEN") ||
+    code.includes("AUTH")
+  );
+}
+
 function normalizeAxiosError(error: AxiosError): ApiClientError {
   const status = error.response?.status;
   const data = error.response?.data;
@@ -187,11 +199,29 @@ apiClient.interceptors.request.use((config) => {
 });
 
 apiClient.interceptors.response.use(
-  (response) => {
+  async (response) => {
     if (response.status === 204) return response;
     const ct = response.headers["content-type"];
     const { data } = response;
     if (!isJsonLikeContentType(ct)) return response;
+    if (
+      isAuthFailureEnvelope(data) &&
+      !shouldSkip401Refresh(response.config.url ?? "") &&
+      !isRefreshRequest(response.config)
+    ) {
+      const cfg = response.config as InternalAxiosRequestConfig & {
+        _retry?: boolean;
+      };
+      if (!cfg._retry && getRefreshToken()) {
+        cfg._retry = true;
+        try {
+          await refreshSessionSingleFlight();
+          return apiClient.request(cfg);
+        } catch {
+          useAuthStore.getState().clearSession();
+        }
+      }
+    }
     const rejected = rejectIfEnvelopeFailure(data, response.status);
     if (rejected) return rejected;
     return response;

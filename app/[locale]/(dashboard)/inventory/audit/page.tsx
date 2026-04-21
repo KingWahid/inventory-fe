@@ -17,7 +17,7 @@ import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 
-const DEFAULT_PER_PAGE = 20;
+const DEFAULT_PER_PAGE = 10;
 
 function parsePositiveInt(v: string | null, fallback: number): number {
   const n = Number(v);
@@ -42,6 +42,21 @@ function shortUuid(id: string | null | undefined): string {
   const t = id.trim();
   if (t.length <= 13) return t;
   return `${t.slice(0, 8)}…`;
+}
+
+function getAuditUserName(item: AuditLog): string {
+  const candidateKeys = ["user_name", "userName", "actor_name", "actorName"];
+  const sources = [item.after_data, item.before_data];
+  for (const source of sources) {
+    if (!source || typeof source !== "object") continue;
+    const row = source as Record<string, unknown>;
+    for (const key of candidateKeys) {
+      const value = row[key];
+      if (typeof value === "string" && value.trim()) return value.trim();
+    }
+  }
+  if (item.user_id?.trim()) return shortUuid(item.user_id);
+  return "—";
 }
 
 /** datetime-local value from ISO string (best-effort local) */
@@ -147,7 +162,8 @@ export default function InventoryAuditPage() {
 
   const rows = listQuery.data?.data ?? [];
   const pagination = listQuery.data?.pagination;
-  const totalPages = pagination?.total_pages ?? 1;
+  const currentPage = pagination?.page ?? page;
+  const totalPages = Math.max(1, pagination?.total_pages ?? 1);
 
   function setQueryParams(next: Partial<AuditLogListParams & { page?: number }>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -313,20 +329,19 @@ export default function InventoryAuditPage() {
               <th className="px-3 py-2 font-semibold">{t("tableTime")}</th>
               <th className="px-3 py-2 font-semibold">{t("tableAction")}</th>
               <th className="px-3 py-2 font-semibold">{t("tableEntity")}</th>
-              <th className="px-3 py-2 font-semibold">{t("tableId")}</th>
               <th className="px-3 py-2 font-semibold">{t("tableUser")}</th>
             </tr>
           </thead>
           <tbody>
             {listQuery.isLoading ? (
               <tr>
-                <td className="px-3 py-6 text-default-500" colSpan={5}>
+                <td className="px-3 py-6 text-default-500" colSpan={4}>
                   {t("loading")}
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td className="px-3 py-6 text-default-500" colSpan={5}>
+                <td className="px-3 py-6 text-default-500" colSpan={4}>
                   {t("empty")}
                 </td>
               </tr>
@@ -338,15 +353,8 @@ export default function InventoryAuditPage() {
                   </td>
                   <td className="px-3 py-2">{item.action}</td>
                   <td className="px-3 py-2">{item.entity}</td>
-                  <td className="px-3 py-2 font-mono text-xs text-default-800">
-                    <span title={item.entity_id}>{shortUuid(item.entity_id)}</span>
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs text-default-700">
-                    {item.user_id ? (
-                      <span title={item.user_id}>{shortUuid(item.user_id)}</span>
-                    ) : (
-                      "—"
-                    )}
+                  <td className="px-3 py-2 text-default-700">
+                    {getAuditUserName(item)}
                   </td>
                 </tr>
               ))
@@ -358,20 +366,20 @@ export default function InventoryAuditPage() {
       <div className="flex items-center justify-between">
         <Button
           variant="secondary"
-          onPress={() => setQueryParams({ page: Math.max(1, page - 1) })}
-          isDisabled={page <= 1}
+          onClick={() => setQueryParams({ page: Math.max(1, currentPage - 1) })}
+          disabled={currentPage <= 1}
         >
           {tc("prev")}
         </Button>
         <div className="text-sm text-default-600">
-          {tc("pageOf", { page, total: totalPages })}
+          {tc("pageOf", { page: currentPage, total: totalPages })}
         </div>
         <Button
           variant="secondary"
-          onPress={() =>
-            setQueryParams({ page: Math.min(totalPages, page + 1) })
+          onClick={() =>
+            setQueryParams({ page: Math.min(totalPages, currentPage + 1) })
           }
-          isDisabled={page >= totalPages}
+          disabled={currentPage >= totalPages}
         >
           {tc("next")}
         </Button>

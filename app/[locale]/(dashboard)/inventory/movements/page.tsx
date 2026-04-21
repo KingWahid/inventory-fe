@@ -2,6 +2,7 @@
 
 import { InventorySearchField } from "@/components/ui/molecules/InventorySearchField";
 import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
+import { DataTable, type DataTableColumn } from "@/components/ui/molecules/DataTable";
 import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
 import { Button } from "@/components/ui/button";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
@@ -19,7 +20,7 @@ import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
-const DEFAULT_PER_PAGE = 20;
+const DEFAULT_PER_PAGE = 10;
 
 function parsePositiveInt(v: string | null, fallback: number): number {
   const n = Number(v);
@@ -118,19 +119,6 @@ export default function InventoryMovementsPage() {
     [STATUS_OPTIONS],
   );
 
-  const sortFilterItems = useMemo(
-    () => SORT_FIELDS.map((s) => ({ id: s.value, label: s.label })),
-    [SORT_FIELDS],
-  );
-
-  const orderFilterItems = useMemo(
-    () => [
-      { id: "desc", label: tc("desc") },
-      { id: "asc", label: tc("asc") },
-    ],
-    [tc],
-  );
-
   const [searchDraft, setSearchDraft] = useState(
     searchParams.get("search") ?? "",
   );
@@ -206,7 +194,52 @@ export default function InventoryMovementsPage() {
 
   const rows = listQuery.data?.data ?? [];
   const pagination = listQuery.data?.pagination;
-  const totalPages = pagination?.total_pages ?? 1;
+  const currentPage = pagination?.page ?? page;
+  const totalPages = Math.max(1, pagination?.total_pages ?? 1);
+  const tableColumns: DataTableColumn<Movement>[] = useMemo(
+    () => [
+      {
+        key: "reference_number",
+        header: t("tableRef"),
+        sortKey: "reference_number",
+        cellClassName: "font-medium",
+        render: (item) => (
+          <Link
+            href={`/inventory/movements/${item.id}`}
+            className="text-primary underline-offset-2 hover:underline"
+          >
+            {item.reference_number}
+          </Link>
+        ),
+      },
+      {
+        key: "type",
+        header: t("tableType"),
+        sortKey: "type",
+        render: (item) => item.type,
+      },
+      {
+        key: "status",
+        header: t("tableStatus"),
+        sortKey: "status",
+        render: (item) => item.status,
+      },
+      {
+        key: "warehouse",
+        header: t("tableWarehouse"),
+        cellClassName: "text-default-700",
+        render: (item) => warehouseColumnLabel(item, warehouseCodeById),
+      },
+      {
+        key: "updated_at",
+        header: t("tableUpdated"),
+        sortKey: "updated_at",
+        cellClassName: "text-default-600 tabular-nums",
+        render: (item) => formatUpdated(item.updated_at, locale),
+      },
+    ],
+    [t, warehouseCodeById, locale],
+  );
 
   function setQueryParams(
     next: Partial<
@@ -299,104 +332,42 @@ export default function InventoryMovementsPage() {
           value={searchDraft}
           onChange={setSearchDraft}
         />
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-default-600">{tc("sort")}</span>
-          <div className="flex flex-wrap gap-1">
-            <InventorySelect
-              className="min-w-[8rem]"
-              items={sortFilterItems}
-              value={sort}
-              onChange={(id) =>
-                setQueryParams({ page: 1, sort: id })
-              }
-              ariaLabel={tc("sortColumnAria")}
-            />
-            <InventorySelect
-              className="min-w-[6rem]"
-              items={orderFilterItems}
-              value={order}
-              onChange={(id) =>
-                setQueryParams({
-                  page: 1,
-                  order: id === "asc" ? "asc" : "desc",
-                })
-              }
-              ariaLabel={tc("sortDirAria")}
-            />
-          </div>
-        </div>
         <Button type="submit" variant="secondary" className="shrink-0">
           {tc("search")}
         </Button>
       </form>
 
-      <div className="overflow-x-auto rounded-lg border border-default-200">
-        <table className="w-full min-w-[720px] border-collapse text-sm">
-          <thead className="bg-default-100/60 text-left">
-            <tr>
-              <th className="px-3 py-2 font-semibold">{t("tableRef")}</th>
-              <th className="px-3 py-2 font-semibold">{t("tableType")}</th>
-              <th className="px-3 py-2 font-semibold">{t("tableStatus")}</th>
-              <th className="px-3 py-2 font-semibold">{t("tableWarehouse")}</th>
-              <th className="px-3 py-2 font-semibold">{t("tableUpdated")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {listQuery.isLoading ? (
-              <tr>
-                <td className="px-3 py-6 text-default-500" colSpan={5}>
-                  {t("loading")}
-                </td>
-              </tr>
-            ) : rows.length === 0 ? (
-              <tr>
-                <td className="px-3 py-6 text-default-500" colSpan={5}>
-                  {tc("noData")}
-                </td>
-              </tr>
-            ) : (
-              rows.map((item) => (
-                <tr key={item.id} className="border-t border-default-200">
-                  <td className="px-3 py-2 font-medium">
-                    <Link
-                      href={`/inventory/movements/${item.id}`}
-                      className="text-primary underline-offset-2 hover:underline"
-                    >
-                      {item.reference_number}
-                    </Link>
-                  </td>
-                  <td className="px-3 py-2">{item.type}</td>
-                  <td className="px-3 py-2">{item.status}</td>
-                  <td className="px-3 py-2 text-default-700">
-                    {warehouseColumnLabel(item, warehouseCodeById)}
-                  </td>
-                  <td className="px-3 py-2 text-default-600 tabular-nums">
-                    {formatUpdated(item.updated_at, locale)}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={tableColumns}
+        rows={rows}
+        rowKey={(item) => item.id}
+        sortState={{ key: sort, direction: order }}
+        onSortChange={({ key, direction }) =>
+          setQueryParams({ page: 1, sort: key, order: direction as "asc" | "desc" })
+        }
+        loading={listQuery.isLoading}
+        loadingText={t("loading")}
+        emptyText={tc("noData")}
+        minWidthClassName="min-w-[720px]"
+      />
 
       <div className="flex items-center justify-between">
         <Button
           variant="secondary"
-          onPress={() => setQueryParams({ page: Math.max(1, page - 1) })}
-          isDisabled={page <= 1}
+          onClick={() => setQueryParams({ page: Math.max(1, currentPage - 1) })}
+          disabled={currentPage <= 1}
         >
           {tc("prev")}
         </Button>
         <div className="text-sm text-default-600">
-          {tc("pageOf", { page, total: totalPages })}
+          {tc("pageOf", { page: currentPage, total: totalPages })}
         </div>
         <Button
           variant="secondary"
-          onPress={() =>
-            setQueryParams({ page: Math.min(totalPages, page + 1) })
+          onClick={() =>
+            setQueryParams({ page: Math.min(totalPages, currentPage + 1) })
           }
-          isDisabled={page >= totalPages}
+          disabled={currentPage >= totalPages}
         >
           {tc("next")}
         </Button>

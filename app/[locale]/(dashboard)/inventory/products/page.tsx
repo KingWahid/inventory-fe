@@ -40,12 +40,22 @@ type ModalState =
   | { open: true; mode: "create"; product: null }
   | { open: true; mode: "edit"; product: Product };
 
-const DEFAULT_PER_PAGE = 20;
+const DEFAULT_PER_PAGE = 10;
 
 function parsePositiveInt(v: string | null, fallback: number): number {
   const n = Number(v);
   if (!Number.isFinite(n) || n < 1) return fallback;
   return Math.floor(n);
+}
+
+function getProductStock(item: Product): number {
+  const raw = item.metadata?.current_stock;
+  if (typeof raw === "number" && Number.isFinite(raw)) return Math.floor(raw);
+  if (typeof raw === "string") {
+    const n = Number(raw);
+    if (Number.isFinite(n)) return Math.floor(n);
+  }
+  return 0;
 }
 
 export default function InventoryProductsPage() {
@@ -129,19 +139,6 @@ export default function InventoryProductsPage() {
     [categoryData, tc],
   );
 
-  const sortFilterItems = useMemo(
-    () => SORT_FIELDS.map((s) => ({ id: s.value, label: s.label })),
-    [SORT_FIELDS],
-  );
-
-  const orderFilterItems = useMemo(
-    () => [
-      { id: "asc", label: tc("asc") },
-      { id: "desc", label: tc("desc") },
-    ],
-    [tc],
-  );
-
   const categoryNameById = useMemo(() => {
     const m = new Map<string, string>();
     for (const c of categoryData ?? []) {
@@ -152,7 +149,8 @@ export default function InventoryProductsPage() {
 
   const rows = listQuery.data?.data ?? [];
   const pagination = listQuery.data?.pagination;
-  const totalPages = pagination?.total_pages ?? 1;
+  const currentPage = pagination?.page ?? page;
+  const totalPages = Math.max(1, pagination?.total_pages ?? 1);
   const tableColumns: DataTableColumn<Product>[] = useMemo(
     () => [
       { key: "sku", header: t("tableSku"), sortKey: "sku", cellClassName: "font-medium", render: (item) => item.sku },
@@ -180,6 +178,12 @@ export default function InventoryProductsPage() {
         sortKey: "unit",
         cellClassName: "text-default-600",
         render: (item) => item.unit || "—",
+      },
+      {
+        key: "stock",
+        header: t("tableStock"),
+        cellClassName: "tabular-nums text-default-700",
+        render: (item) => getProductStock(item),
       },
       {
         key: "actions",
@@ -338,32 +342,6 @@ export default function InventoryProductsPage() {
             })
           }
         />
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-default-600">{tc("sort")}</span>
-          <div className="flex flex-wrap gap-1">
-            <InventorySelect
-              className="min-w-[8.5rem]"
-              items={sortFilterItems}
-              value={sort}
-              onChange={(id) =>
-                setQueryParams({ page: 1, sort: id })
-              }
-              ariaLabel={tc("sortColumnAria")}
-            />
-            <InventorySelect
-              className="min-w-[6rem]"
-              items={orderFilterItems}
-              value={order}
-              onChange={(id) =>
-                setQueryParams({
-                  page: 1,
-                  order: id === "desc" ? "desc" : "asc",
-                })
-              }
-              ariaLabel={tc("sortDirAria")}
-            />
-          </div>
-        </div>
         <Button type="submit" variant="secondary" className="shrink-0">
           {tc("search")}
         </Button>
@@ -386,20 +364,20 @@ export default function InventoryProductsPage() {
       <div className="flex items-center justify-between">
         <Button
           variant="secondary"
-          onPress={() => setQueryParams({ page: Math.max(1, page - 1) })}
-          isDisabled={page <= 1}
+          onClick={() => setQueryParams({ page: Math.max(1, currentPage - 1) })}
+          disabled={currentPage <= 1}
         >
           {tc("prev")}
         </Button>
         <div className="text-sm text-default-600">
-          {tc("pageOf", { page, total: totalPages })}
+          {tc("pageOf", { page: currentPage, total: totalPages })}
         </div>
         <Button
           variant="secondary"
-          onPress={() =>
-            setQueryParams({ page: Math.min(totalPages, page + 1) })
+          onClick={() =>
+            setQueryParams({ page: Math.min(totalPages, currentPage + 1) })
           }
-          isDisabled={page >= totalPages}
+          disabled={currentPage >= totalPages}
         >
           {tc("next")}
         </Button>

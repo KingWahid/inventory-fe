@@ -36,7 +36,7 @@ type ModalState =
   | { open: true; mode: "create"; category: null }
   | { open: true; mode: "edit"; category: Category };
 
-const DEFAULT_PER_PAGE = 20;
+const DEFAULT_PER_PAGE = 10;
 
 function parsePositiveInt(v: string | null, fallback: number): number {
   const n = Number(v);
@@ -76,7 +76,8 @@ export default function InventoryCategoriesPage() {
 
   const rows = listQuery.data?.data ?? [];
   const pagination = listQuery.data?.pagination;
-  const totalPages = pagination?.total_pages ?? 1;
+  const currentPage = pagination?.page ?? page;
+  const totalPages = Math.max(1, pagination?.total_pages ?? 1);
   const tableColumns: DataTableColumn<Category>[] = useMemo(
     () => [
       {
@@ -252,18 +253,20 @@ export default function InventoryCategoriesPage() {
       <div className="flex items-center justify-between">
         <Button
           variant="secondary"
-          onClick={() => setQueryParams({ page: Math.max(1, page - 1) })}
-          disabled={page <= 1}
+          onClick={() => setQueryParams({ page: Math.max(1, currentPage - 1) })}
+          disabled={currentPage <= 1}
         >
           {tc("prev")}
         </Button>
         <div className="text-sm text-default-600">
-          {tc("pageOf", { page, total: totalPages })}
+          {tc("pageOf", { page: currentPage, total: totalPages })}
         </div>
         <Button
           variant="secondary"
-          onClick={() => setQueryParams({ page: Math.min(totalPages, page + 1) })}
-          disabled={page >= totalPages}
+          onClick={() =>
+            setQueryParams({ page: Math.min(totalPages, currentPage + 1) })
+          }
+          disabled={currentPage >= totalPages}
         >
           {tc("next")}
         </Button>

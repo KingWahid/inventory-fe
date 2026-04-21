@@ -113,6 +113,16 @@
     "periodWeekly": "Mingguan (12 minggu)",
     "periodMonthly": "Bulanan (12 bulan)",
     "chartEmpty": "Belum ada data chart untuk periode ini.",
+    "lowStockAlertsTitle": "Peringatan Stok Menipis",
+    "criticalBadge": "kritis",
+    "panelEmpty": "Belum ada data untuk panel ini.",
+    "reorderLevelLabel": "Batas reorder:",
+    "storageUtilizationTitle": "Utilisasi Penyimpanan",
+    "estimatedLabel": "estimasi",
+    "topMovingProductsTitle": "Produk Paling Bergerak",
+    "last7dLabel": "7 hari terakhir",
+    "volumeLabel": "Volume",
+    "recentActivityLogTitle": "Log Aktivitas Terbaru",
     "warehouseActivityTitle": "Warehouse activity",
     "auditActivityTitle": "Audit log activity",
     "activityLoading": "Memuat aktivitas realtime...",
@@ -190,6 +200,7 @@
       "tableCategory": "Kategori",
       "tablePrice": "Harga",
       "tableUnit": "Satuan",
+      "tableStock": "Stok",
       "tableActions": "Aksi",
       "ariaProductActions": "Aksi produk"
     },
@@ -284,7 +295,8 @@
         "transferBoth": "Pilih gudang asal dan tujuan.",
         "transferDistinct": "Gudang asal dan tujuan harus berbeda.",
         "adjustWh": "Pilih gudang untuk penyesuaian.",
-        "unknownType": "Tipe movement tidak dikenal."
+        "unknownType": "Tipe movement tidak dikenal.",
+        "sessionMissing": "Sesi login tidak ditemukan. Silakan login ulang."
       }
     },
     "movementsDetail": {

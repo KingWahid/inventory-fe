@@ -1,7 +1,11 @@
 "use client";
 
 import { setSessionCookie } from "@/lib/auth/session-cookie";
-import { useAuthStore } from "@/stores/auth";
+import {
+  hasAuthHydrated,
+  onAuthFinishHydration,
+  useAuthStore,
+} from "@/stores/auth";
 import { useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 
@@ -13,8 +17,8 @@ export function RedirectIfAuthenticated() {
 
   /* eslint-disable react-hooks/set-state-in-effect -- zustand persist hydration gate */
   useEffect(() => {
-    setHydrated(useAuthStore.persist.hasHydrated());
-    return useAuthStore.persist.onFinishHydration(() => setHydrated(true));
+    setHydrated(hasAuthHydrated());
+    return onAuthFinishHydration(() => setHydrated(true));
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 

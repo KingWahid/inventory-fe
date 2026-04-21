@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DataTable, type DataTableColumn } from "@/components/ui/molecules/DataTable";
 import { InventorySearchField } from "@/components/ui/molecules/InventorySearchField";
-import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
 import { WarehouseFormModal } from "@/components/ui/organisms/warehouse/WarehouseFormModal";
 import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
 import { usePathname, useRouter } from "@/i18n/navigation";
@@ -37,7 +36,7 @@ type ModalState =
   | { open: true; mode: "create"; warehouse: null }
   | { open: true; mode: "edit"; warehouse: Warehouse };
 
-const DEFAULT_PER_PAGE = 20;
+const DEFAULT_PER_PAGE = 10;
 
 function parsePositiveInt(v: string | null, fallback: number): number {
   const n = Number(v);
@@ -69,19 +68,6 @@ export default function InventoryWarehousesPage() {
         { value: "is_active" as const, label: t("sortActive") },
       ] as const,
     [t],
-  );
-
-  const sortFilterItems = useMemo(
-    () => SORT_FIELDS.map((s) => ({ id: s.value, label: s.label })),
-    [SORT_FIELDS],
-  );
-
-  const orderFilterItems = useMemo(
-    () => [
-      { id: "asc", label: tc("asc") },
-      { id: "desc", label: tc("desc") },
-    ],
-    [tc],
   );
 
   const [searchDraft, setSearchDraft] = useState(
@@ -120,7 +106,8 @@ export default function InventoryWarehousesPage() {
 
   const rows = listQuery.data?.data ?? [];
   const pagination = listQuery.data?.pagination;
-  const totalPages = pagination?.total_pages ?? 1;
+  const currentPage = pagination?.page ?? page;
+  const totalPages = Math.max(1, pagination?.total_pages ?? 1);
   const tableColumns: DataTableColumn<Warehouse>[] = useMemo(
     () => [
       { key: "code", header: t("tableCode"), sortKey: "code", cellClassName: "font-medium", render: (item) => item.code },
@@ -271,32 +258,6 @@ export default function InventoryWarehousesPage() {
           value={searchDraft}
           onChange={setSearchDraft}
         />
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-default-600">{tc("sort")}</span>
-          <div className="flex flex-wrap gap-1">
-            <InventorySelect
-              className="min-w-[8.5rem]"
-              items={sortFilterItems}
-              value={sort}
-              onChange={(id) =>
-                setQueryParams({ page: 1, sort: id })
-              }
-              ariaLabel={tc("sortColumnAria")}
-            />
-            <InventorySelect
-              className="min-w-[6rem]"
-              items={orderFilterItems}
-              value={order}
-              onChange={(id) =>
-                setQueryParams({
-                  page: 1,
-                  order: id === "desc" ? "desc" : "asc",
-                })
-              }
-              ariaLabel={tc("sortDirAria")}
-            />
-          </div>
-        </div>
         <Button type="submit" variant="secondary" className="shrink-0">
           {tc("search")}
         </Button>
@@ -319,20 +280,20 @@ export default function InventoryWarehousesPage() {
       <div className="flex items-center justify-between">
         <Button
           variant="secondary"
-          onPress={() => setQueryParams({ page: Math.max(1, page - 1) })}
-          isDisabled={page <= 1}
+          onClick={() => setQueryParams({ page: Math.max(1, currentPage - 1) })}
+          disabled={currentPage <= 1}
         >
           {tc("prev")}
         </Button>
         <div className="text-sm text-default-600">
-          {tc("pageOf", { page, total: totalPages })}
+          {tc("pageOf", { page: currentPage, total: totalPages })}
         </div>
         <Button
           variant="secondary"
-          onPress={() =>
-            setQueryParams({ page: Math.min(totalPages, page + 1) })
+          onClick={() =>
+            setQueryParams({ page: Math.min(totalPages, currentPage + 1) })
           }
-          isDisabled={page >= totalPages}
+          disabled={currentPage >= totalPages}
         >
           {tc("next")}
         </Button>

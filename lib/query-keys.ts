@@ -73,6 +73,8 @@ export const queryKeys = {
       summary: () => [...inventoryRoot, "dashboard", "summary"] as const,
       movementsChart: (params: { period: "daily" | "weekly" | "monthly" }) =>
         [...inventoryRoot, "dashboard", "movementsChart", params] as const,
+      storageUtilization: (params: { limit: number }) =>
+        [...inventoryRoot, "dashboard", "storageUtilization", params] as const,
       warehouseActivity: () =>
         [...inventoryRoot, "dashboard", "warehouseActivity"] as const,
       auditActivity: () =>

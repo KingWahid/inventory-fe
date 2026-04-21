@@ -1,7 +1,11 @@
 "use client";
 
 import { setSessionCookie } from "@/lib/auth/session-cookie";
-import { useAuthStore } from "@/stores/auth";
+import {
+  hasAuthHydrated,
+  onAuthFinishHydration,
+  useAuthStore,
+} from "@/stores/auth";
 import { useEffect } from "react";
 
 /**
@@ -15,10 +19,10 @@ export function SessionCookieSync() {
         setSessionCookie();
       }
     }
-    if (useAuthStore.persist.hasHydrated()) {
+    if (hasAuthHydrated()) {
       sync();
     }
-    return useAuthStore.persist.onFinishHydration(() => {
+    return onAuthFinishHydration(() => {
       sync();
     });
   }, []);

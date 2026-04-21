@@ -20,6 +20,14 @@ export type DashboardMovementChart = {
   points: DashboardMovementChartPoint[];
 };
 
+export type DashboardStorageUtilizationRow = {
+  warehouse_id: string;
+  warehouse_code: string;
+  warehouse_name: string;
+  on_hand_qty: number;
+  percent: number;
+};
+
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   const res = await apiClient.get<ApiEnvelopeSuccess<DashboardSummary>>(
     "/api/v1/inventory/dashboard/summary",
@@ -33,6 +41,16 @@ export async function getDashboardMovementsChart(
   const res = await apiClient.get<ApiEnvelopeSuccess<DashboardMovementChart>>(
     "/api/v1/inventory/dashboard/movements/chart",
     { params: { period } },
+  );
+  return res.data.data;
+}
+
+export async function getDashboardStorageUtilization(
+  limit = 3,
+): Promise<DashboardStorageUtilizationRow[]> {
+  const res = await apiClient.get<ApiEnvelopeSuccess<DashboardStorageUtilizationRow[]>>(
+    "/api/v1/inventory/dashboard/storage-utilization",
+    { params: { limit } },
   );
   return res.data.data;
 }

@@ -50,3 +50,28 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 );
+
+type PersistApi = {
+  hasHydrated: () => boolean;
+  onFinishHydration: (listener: () => void) => () => void;
+};
+
+function getPersistApi(): PersistApi | null {
+  const store = useAuthStore as unknown as { persist?: PersistApi };
+  return store.persist ?? null;
+}
+
+export function hasAuthHydrated(): boolean {
+  const persistApi = getPersistApi();
+  if (!persistApi) return true;
+  return persistApi.hasHydrated();
+}
+
+export function onAuthFinishHydration(listener: () => void): () => void {
+  const persistApi = getPersistApi();
+  if (!persistApi) {
+    listener();
+    return () => {};
+  }
+  return persistApi.onFinishHydration(listener);
+}

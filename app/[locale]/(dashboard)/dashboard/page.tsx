@@ -15,31 +15,25 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { buildActivitySseUrl } from "@/lib/api/sse-activity-url";
-import { listAuditLogs, type AuditLog } from "@/lib/api/audit";
 import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
 import { SummaryStatCard } from "@/components/ui/organisms/SummaryStatCard";
 import { DashboardPageTemplate } from "@/components/ui/templates/DashboardPageTemplate";
+import { listAuditLogs } from "@/lib/api/audit";
 import {
   getDashboardMovementsChart,
+  getDashboardStorageUtilization,
   getDashboardSummary,
   type DashboardChartPeriod,
 } from "@/lib/api/dashboard";
+import { getMovement, listMovements } from "@/lib/api/movements";
+import { listProducts } from "@/lib/api/products";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
 import { queryKeys } from "@/lib/query-keys";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
-import {
-  FiAlertTriangle,
-  FiCheck,
-  FiHome,
-  FiPackage,
-  FiPlus,
-  FiRepeat,
-} from "react-icons/fi";
-import { useAuthStore } from "@/stores/auth";
+import { FiAlertTriangle, FiHome, FiPackage, FiRepeat } from "react-icons/fi";
 
 const STALE_MS = 30_000;
 const chartConfig = {
@@ -79,8 +73,6 @@ export default function DashboardPage() {
   const t = useTranslations("dashboard");
   const locale = useLocale();
   const [period, setPeriod] = useState<DashboardChartPeriod>("weekly");
-  const accessToken = useAuthStore((s) => s.accessToken);
-  const queryClient = useQueryClient();
 
   const summaryQuery = useQuery({
     queryKey: queryKeys.inventory.dashboard.summary(),
@@ -93,21 +85,69 @@ export default function DashboardPage() {
     queryFn: () => getDashboardMovementsChart(period),
     staleTime: STALE_MS,
   });
-  const auditActivityQuery = useQuery({
+
+  const storageUtilizationQuery = useQuery({
+    queryKey: queryKeys.inventory.dashboard.storageUtilization({ limit: 3 }),
+    queryFn: () => getDashboardStorageUtilization(3),
+    staleTime: STALE_MS,
+  });
+
+  const productsQuery = useQuery({
+    queryKey: queryKeys.inventory.products.list({
+      page: 1,
+      per_page: 100,
+      sort: "reorder_level",
+      order: "desc",
+    }),
+    queryFn: () =>
+      listProducts({
+        page: 1,
+        per_page: 100,
+        sort: "reorder_level",
+        order: "desc",
+      }),
+    staleTime: STALE_MS,
+  });
+
+  const recentMovementsQuery = useQuery({
+    queryKey: queryKeys.inventory.movements.list({
+      page: 1,
+      per_page: 10,
+      status: "confirmed",
+      sort: "updated_at",
+      order: "desc",
+    }),
+    queryFn: () =>
+      listMovements({
+        page: 1,
+        per_page: 10,
+        status: "confirmed",
+        sort: "updated_at",
+        order: "desc",
+      }),
+    staleTime: STALE_MS,
+  });
+
+  const movementDetailsQuery = useQuery({
+    queryKey: [
+      ...queryKeys.inventory.dashboard.warehouseActivity(),
+      "movementDetails",
+      (recentMovementsQuery.data?.data ?? []).map((m) => m.id),
+    ] as const,
+    queryFn: async () => {
+      const ids = (recentMovementsQuery.data?.data ?? []).map((m) => m.id);
+      const details = await Promise.all(ids.map((id) => getMovement(id)));
+      return details;
+    },
+    enabled: (recentMovementsQuery.data?.data?.length ?? 0) > 0,
+    staleTime: STALE_MS,
+  });
+
+  const activityQuery = useQuery({
     queryKey: queryKeys.inventory.dashboard.auditActivity(),
     queryFn: async () => {
       const { data } = await listAuditLogs({ page: 1, per_page: 5 });
       return data;
-    },
-    staleTime: STALE_MS,
-  });
-  const warehouseActivityQuery = useQuery({
-    queryKey: queryKeys.inventory.dashboard.warehouseActivity(),
-    queryFn: async () => {
-      const { data } = await listAuditLogs({ page: 1, per_page: 20 });
-      return data
-        .filter((row) => row.entity === "warehouse" || row.entity === "movement")
-        .slice(0, 5);
     },
     staleTime: STALE_MS,
   });
@@ -136,29 +176,42 @@ export default function DashboardPage() {
     };
   }, [chartData]);
 
-  const chartError =
-    summaryQuery.error ??
-    chartQuery.error ??
-    warehouseActivityQuery.error ??
-    auditActivityQuery.error;
+  const chartError = summaryQuery.error ?? chartQuery.error;
   const chartLoading = chartQuery.isLoading;
-  useEffect(() => {
-    if (!accessToken?.trim()) return;
-    const es = new EventSource(buildActivitySseUrl(accessToken));
-    const onActivityChanged = () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.dashboard.warehouseActivity(),
+
+  const lowStockAlerts = useMemo(
+    () =>
+      (productsQuery.data?.data ?? [])
+        .filter((p) => (p.reorder_level ?? 0) > 0)
+        .slice(0, 3),
+    [productsQuery.data?.data],
+  );
+
+  const topMovingProducts = useMemo(() => {
+    const byProduct = new Map<string, number>();
+    for (const movement of movementDetailsQuery.data ?? []) {
+      for (const line of movement.lines ?? []) {
+        const qty = Math.max(0, Number(line.quantity) || 0);
+        byProduct.set(line.product_id, (byProduct.get(line.product_id) ?? 0) + qty);
+      }
+    }
+    const productNameById = new Map(
+      (productsQuery.data?.data ?? []).map((p) => [p.id, p.name]),
+    );
+    return Array.from(byProduct.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([productId, volume], index, arr) => {
+        const prev = arr[index + 1]?.[1] ?? volume;
+        const trend = prev > 0 ? ((volume - prev) / prev) * 100 : 0;
+        return {
+          productId,
+          name: productNameById.get(productId) ?? productId.slice(0, 8),
+          volume,
+          trend,
+        };
       });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.dashboard.auditActivity(),
-      });
-    };
-    es.addEventListener("activity_changed", onActivityChanged);
-    return () => {
-      es.removeEventListener("activity_changed", onActivityChanged);
-      es.close();
-    };
-  }, [accessToken, queryClient]);
+  }, [movementDetailsQuery.data, productsQuery.data?.data]);
 
   function formatEventTime(iso: string) {
     const ts = new Date(iso).getTime();
@@ -169,13 +222,6 @@ export default function DashboardPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
-  }
-
-  function activityIcon(row: AuditLog) {
-    if (row.action.toUpperCase().includes("DELETE")) return <FiAlertTriangle className="size-3.5" />;
-    if (row.action.toUpperCase().includes("CONFIRM")) return <FiCheck className="size-3.5" />;
-    if (row.action.toUpperCase().includes("CREATE")) return <FiPlus className="size-3.5" />;
-    return <FiRepeat className="size-3.5" />;
   }
 
   return (
@@ -322,57 +368,142 @@ export default function DashboardPage() {
         </Card>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border border-default-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-[#02395b]">
-            {t("warehouseActivityTitle")}
-          </h3>
-          <div className="mt-4 min-h-44 space-y-4">
-            {warehouseActivityQuery.isLoading ? (
-              <p className="text-sm text-default-500">{t("activityLoading")}</p>
-            ) : (warehouseActivityQuery.data?.length ?? 0) === 0 ? (
-              <p className="text-sm text-default-500">{t("activityEmpty")}</p>
-            ) : (
-              warehouseActivityQuery.data?.map((row) => (
-                <div key={row.id} className="flex items-start gap-3">
-                  <span className="mt-1 inline-flex h-7 w-7 items-center justify-center rounded-md bg-[#d9efff] text-xs text-[#0a5a8c]">
-                    {activityIcon(row)}
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-[#111827]">{row.entity}</p>
-                    <p className="text-sm text-default-600">{row.action.toLowerCase()}</p>
-                    <p className="text-xs text-default-500">{formatEventTime(row.created_at)}</p>
+      <section className="space-y-4">
+        <div className="grid gap-4 xl:grid-cols-3">
+          <div className="rounded-xl border border-default-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-[#1f2937]">
+                {t("lowStockAlertsTitle")}
+              </h3>
+              <span className="rounded-full bg-[#fee2e2] px-2 py-0.5 text-[10px] font-semibold text-[#b91c1c]">
+                {summary ? `${summary.low_stock_count} ${t("criticalBadge")}` : t("criticalBadge")}
+              </span>
+            </div>
+            <div className="mt-4 space-y-2">
+              {productsQuery.isLoading ? (
+                <p className="text-sm text-default-500">{t("activityLoading")}</p>
+              ) : lowStockAlerts.length === 0 ? (
+                <p className="text-sm text-default-500">{t("panelEmpty")}</p>
+              ) : (
+                lowStockAlerts.map((product, idx) => (
+                  <div
+                    key={product.id}
+                    className="flex items-center justify-between rounded-lg border border-default-200 px-3 py-2"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-[#111827]">{product.name}</p>
+                      <p className="text-xs text-default-500">
+                        {t("reorderLevelLabel")} {product.reorder_level ?? 0}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex h-2 w-2 rounded-full ${
+                        idx === 0
+                          ? "bg-[#ef4444]"
+                          : idx === 1
+                            ? "bg-[#f59e0b]"
+                            : "bg-[#9ca3af]"
+                      }`}
+                    />
                   </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-default-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-[#1f2937]">
+                {t("storageUtilizationTitle")}
+              </h3>
+              <span className="text-xs text-default-500">{t("estimatedLabel")}</span>
+            </div>
+            <div className="mt-4 space-y-4">
+              {storageUtilizationQuery.isLoading ? (
+                <p className="text-sm text-default-500">{t("activityLoading")}</p>
+              ) : (storageUtilizationQuery.data?.length ?? 0) === 0 ? (
+                <p className="text-sm text-default-500">{t("panelEmpty")}</p>
+              ) : (
+                storageUtilizationQuery.data?.map((row) => (
+                  <div key={row.warehouse_id} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-[#374151]">{row.warehouse_name}</span>
+                      <span className="font-semibold text-[#111827]">{row.percent}%</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-default-100">
+                      <div
+                        className="h-2 rounded-full bg-[#111827]"
+                        style={{ width: `${row.percent}%` }}
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-default-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-[#1f2937]">
+                {t("topMovingProductsTitle")}
+              </h3>
+              <span className="text-xs font-semibold text-default-500">{t("last7dLabel")}</span>
+            </div>
+            <div className="mt-4 space-y-2">
+              {movementDetailsQuery.isLoading ? (
+                <p className="text-sm text-default-500">{t("activityLoading")}</p>
+              ) : topMovingProducts.length === 0 ? (
+                <p className="text-sm text-default-500">{t("panelEmpty")}</p>
+              ) : (
+                topMovingProducts.map((item) => (
+                  <div key={item.productId} className="flex items-center justify-between py-1.5">
+                    <div>
+                      <p className="text-sm font-semibold text-[#111827]">{item.name}</p>
+                      <p className="text-xs text-default-500">{t("volumeLabel")}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-[#111827]">{item.volume}</p>
+                      <p
+                        className={`text-xs font-semibold ${
+                          item.trend >= 0 ? "text-[#059669]" : "text-[#dc2626]"
+                        }`}
+                      >
+                        {item.trend >= 0 ? "+" : ""}
+                        {Math.abs(item.trend).toFixed(0)}%
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
         <div className="rounded-xl border border-default-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-[#02395b]">
-            {t("auditActivityTitle")}
-          </h3>
-          <div className="mt-4 min-h-44 space-y-4">
-            {auditActivityQuery.isLoading ? (
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-[#1f2937]">
+              {t("recentActivityLogTitle")}
+            </h3>
+          </div>
+          <div className="mt-4 space-y-3">
+            {activityQuery.isLoading ? (
               <p className="text-sm text-default-500">{t("activityLoading")}</p>
-            ) : (auditActivityQuery.data?.length ?? 0) === 0 ? (
-              <p className="text-sm text-default-500">{t("activityEmpty")}</p>
+            ) : (activityQuery.data?.length ?? 0) === 0 ? (
+              <p className="text-sm text-default-500">{t("panelEmpty")}</p>
             ) : (
-              auditActivityQuery.data?.map((row) => (
+              activityQuery.data?.slice(0, 3).map((row) => (
                 <div key={row.id} className="flex items-start gap-3">
-                  <span className="mt-1 inline-flex h-7 w-7 items-center justify-center rounded-md bg-[#d9efff] text-xs text-[#0a5a8c]">
-                    {activityIcon(row)}
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-[#111827]">
-                      {row.entity}
-                    </p>
-                    <p className="text-sm text-default-600">
-                      {row.action.toLowerCase()}
+                  <span className="mt-1 inline-flex h-2.5 w-2.5 rounded-full bg-[#111827]" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-[#111827]">
+                      {row.action.toLowerCase()}{" "}
+                      <span className="font-semibold text-[#2563eb]">{row.entity}</span>
                     </p>
                     <p className="text-xs text-default-500">{formatEventTime(row.created_at)}</p>
                   </div>
+                  <span className="text-[11px] font-semibold text-default-400">
+                    #{row.id.slice(0, 8)}
+                  </span>
                 </div>
               ))
             )}

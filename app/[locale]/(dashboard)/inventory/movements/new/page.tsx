@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { listProducts } from "@/lib/api/products";
 import { listWarehouses } from "@/lib/api/warehouses";
 import { userFacingApiMessage } from "@/lib/api/user-facing-error";
+import { getAccessToken } from "@/lib/api/token";
 import { ApiErrorAlert } from "@/components/ui/molecules/ApiErrorAlert";
 import { InventorySelect } from "@/components/ui/molecules/InventorySelect";
 import { PageHeader } from "@/components/ui/molecules/PageHeader";
@@ -120,6 +121,10 @@ export default function NewMovementPage() {
 
   const createMut = useMutation({
     mutationFn: async (idempotencyKey: string) => {
+      if (!getAccessToken()) {
+        throw new Error(terr("sessionMissing"));
+      }
+
       const ref = referenceNumber.trim();
       if (!ref) throw new Error(terr("refRequired"));
 
@@ -234,6 +239,13 @@ export default function NewMovementPage() {
     setLines((prev) =>
       prev.map((row, i) => (i === index ? { ...row, ...patch } : row)),
     );
+  }
+
+  function nextIdempotencyKey(): string {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    return `idem-${Date.now()}`;
   }
 
   return (
@@ -454,7 +466,7 @@ export default function NewMovementPage() {
       <div className="flex flex-wrap items-center gap-3 border-t border-default-200 pt-4 dark:border-default-100">
         <Button
           variant="primary"
-          onPress={() => createMut.mutate(crypto.randomUUID())}
+          onPress={() => createMut.mutate(nextIdempotencyKey())}
           isDisabled={createMut.isPending}
         >
           {createMut.isPending ? t("saving") : t("saveDraft")}

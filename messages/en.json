@@ -113,6 +113,16 @@
     "periodWeekly": "Weekly (12 weeks)",
     "periodMonthly": "Monthly (12 months)",
     "chartEmpty": "No chart data for this period.",
+    "lowStockAlertsTitle": "Low Stock Alerts",
+    "criticalBadge": "critical",
+    "panelEmpty": "No data yet for this panel.",
+    "reorderLevelLabel": "Reorder level:",
+    "storageUtilizationTitle": "Storage Utilization",
+    "estimatedLabel": "estimated",
+    "topMovingProductsTitle": "Top Moving Products",
+    "last7dLabel": "last 7d",
+    "volumeLabel": "Volume",
+    "recentActivityLogTitle": "Recent Activity Log",
     "warehouseActivityTitle": "Warehouse activity",
     "auditActivityTitle": "Audit log activity",
     "activityLoading": "Loading realtime activity...",
@@ -190,6 +200,7 @@
       "tableCategory": "Category",
       "tablePrice": "Price",
       "tableUnit": "Unit",
+      "tableStock": "Stock",
       "tableActions": "Actions",
       "ariaProductActions": "Product actions"
     },
@@ -284,7 +295,8 @@
         "transferBoth": "Pick source and destination warehouses.",
         "transferDistinct": "Source and destination must differ.",
         "adjustWh": "Pick warehouse for adjustment.",
-        "unknownType": "Unknown movement type."
+        "unknownType": "Unknown movement type.",
+        "sessionMissing": "Login session not found. Please sign in again."
       }
     },
     "movementsDetail": {
